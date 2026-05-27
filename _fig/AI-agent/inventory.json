@@ -1,0 +1,33 @@
+{
+  "source": {
+    "filename": "AI agent.fig",
+    "nodeCount": 225,
+    "pages": [
+      {
+        "id": "0:1",
+        "name": "Page 1",
+        "selected": true
+      }
+    ],
+    "userSelectedFrames": []
+  },
+  "components": [],
+  "tokens": {
+    "count": 8,
+    "modes": [
+      "Mode",
+      "Light",
+      "Dark",
+      "IC - Light",
+      "IC - Dark",
+      "Green",
+      "Blue",
+      "Dark"
+    ]
+  },
+  "styles": {
+    "text": 0,
+    "effect": 0
+  },
+  "warnings": []
+}
