@@ -10,9 +10,11 @@ const THEMES = {
   solayerAI: {
     label: 'Solayer AI',
     bgClass: 'theme-solayerAI',
-    accent: '#2EE5B0',
-    blob: ['#7CFFD4', '#2EE5B0', '#0F5A45'],
-    haze: 'rgba(46,229,176,0.22)',
+    // brand palette from the Solayer app Figma file:
+    // secondary green #00ffa3 (signature) + primary green #084d3e (deep)
+    accent: '#00ffa3',
+    blob: ['#7CFFD4', '#00ffa3', '#084d3e'],
+    haze: 'rgba(0,255,163,0.22)',
     ink: '#ffffff',
     sub: 'rgba(255,255,255,0.55)',
     chip: 'rgba(255,255,255,0.06)',
@@ -22,7 +24,7 @@ const THEMES = {
     cardBorder: 'rgba(255,255,255,0.08)',
     pill: 'rgba(255,255,255,0.10)',
     pillInk: '#ffffff',
-    primaryPill: '#084D3E',
+    primaryPill: '#084d3e',
     primaryPillInk: '#ffffff'
   },
   indigo: {
@@ -318,44 +320,64 @@ function useTranscript(active, setTranscript) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Morphing liquid blob (goo filter)
+// Voice Orb — premium gradient sphere (After Effects "gradient sphere" recipe
+// rebuilt in CSS): top→bottom depth gradient, bright rim light, floating
+// diffuse inner blobs, outer bloom. Reacts to mic level via --vlive.
 // ─────────────────────────────────────────────────────────────
-function MorphBlob({ theme, listening }) {
-  const [c1, c2, c3] = theme.blob;
-  const gid = `g-${theme.label.replace(/\s+/g, '')}`;
+function VoiceOrb({ theme, listening }) {
+  // Per-theme palette: [topHighlight, mid, deepShadow, bottomGlow, blobAccent]
+  const P = {
+    'theme-solayerAI': {
+      top: '#9CFFE0', mid: '#0c5a47', deep: '#04130f',
+      bottom: '#15E0D8', blob: '#7CFFD4', blob2: '#2BE0C8', rim: '#7CFFD9',
+    },
+    'theme-indigo': {
+      top: '#C9BBFF', mid: '#3a2f8f', deep: '#0a0820',
+      bottom: '#7C6BFF', blob: '#B6A0FF', blob2: '#6155F5', rim: '#C9BBFF',
+    },
+    'theme-lily': {
+      top: '#E6F6C8', mid: '#4a7a2e', deep: '#16330c',
+      bottom: '#9FE070', blob: '#cfe89a', blob2: '#7FB04D', rim: '#E6F6C8',
+    },
+  }[theme.bgClass] || {
+    top: '#9CFFE0', mid: '#0c5a47', deep: '#04130f',
+    bottom: '#15E0D8', blob: '#7CFFD4', blob2: '#2BE0C8', rim: '#7CFFD9',
+  };
   return (
-    <svg className="blob-svg" viewBox="0 0 400 400" preserveAspectRatio="xMidYMid meet"
-    style={{ width: '100%', height: '100%', overflow: 'visible' }}>
-      <defs>
-        <filter id={`goo-${gid}`} x="-50%" y="-50%" width="200%" height="200%">
-          <feGaussianBlur in="SourceGraphic" stdDeviation="14" result="blur" />
-          <feColorMatrix in="blur" mode="matrix"
-          values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -10" result="goo" />
-          <feComposite in="SourceGraphic" in2="goo" operator="atop" />
-        </filter>
-        <radialGradient id={`grad-${gid}`} cx="40%" cy="35%" r="75%">
-          <stop offset="0%" stopColor={c1} />
-          <stop offset="55%" stopColor={c2} />
-          <stop offset="100%" stopColor={c3} />
-        </radialGradient>
-        <radialGradient id={`shine-${gid}`} cx="35%" cy="28%" r="35%">
-          <stop offset="0%" stopColor="rgba(255,255,255,0.55)" />
-          <stop offset="100%" stopColor="rgba(255,255,255,0)" />
-        </radialGradient>
-      </defs>
-      <g filter={`url(#goo-${gid})`} className={`blob-group ${listening ? 'is-live' : ''}`}>
-        <circle cx="200" cy="200" r="88" fill={`url(#grad-${gid})`} className="bcore" />
-        <circle cx="200" cy="200" r="58" fill={`url(#grad-${gid})`} className="b1" />
-        <circle cx="200" cy="200" r="52" fill={`url(#grad-${gid})`} className="b2" />
-        <circle cx="200" cy="200" r="46" fill={`url(#grad-${gid})`} className="b3" />
-        <circle cx="200" cy="200" r="48" fill={`url(#grad-${gid})`} className="b4" />
-        <circle cx="200" cy="200" r="40" fill={`url(#grad-${gid})`} className="b5" />
-      </g>
-      <ellipse cx="170" cy="155" rx="60" ry="36" fill={`url(#shine-${gid})`}
-      style={{ pointerEvents: 'none', mixBlendMode: 'screen' }} />
-    </svg>);
-
+    <div className={`vorb ${listening ? 'is-live' : ''}`}
+      style={{
+        '--top': P.top, '--mid': P.mid, '--deep': P.deep,
+        '--bottom': P.bottom, '--blob': P.blob, '--blob2': P.blob2, '--rim': P.rim,
+      }}>
+      {/* outer bloom */}
+      <div className="vorb-bloom" />
+      {/* stage — disc + edge glow + beam all share ONE box so the border
+          beam is always locked to the sphere at any size or scale */}
+      <div className="vorb-stage">
+        {/* sphere body — clips the floating blobs */}
+        <div className="vorb-disc">
+          <div className="vorb-gradient" />
+          <div className="vorb-blobs">
+            <span className="vb-blob vb-b1" />
+            <span className="vb-blob vb-b2" />
+            <span className="vb-blob vb-b3" />
+            <span className="vb-blob vb-b4" />
+            <span className="vb-blob vb-b5" />
+          </div>
+          <div className="vorb-noise" />
+          <div className="vorb-innerglow" />
+          <div className="vorb-toplight" />
+          <div className="vorb-rim" />
+        </div>
+        {/* animated deep edge glow — breathing halo + travelling border beam */}
+        <div className="vorb-ring" />
+        <div className="vorb-beam"><span className="vorb-beam-light" /></div>
+      </div>
+    </div>
+  );
 }
+// Back-compat alias for any old callers
+const MorphBlob = VoiceOrb;
 
 function Ripples({ theme, show }) {
   if (!show) return null;
@@ -390,7 +412,7 @@ function Particles({ theme, listening }) {
 // ─────────────────────────────────────────────────────────────
 // Icons
 // ─────────────────────────────────────────────────────────────
-function Sparkle({ color = '#2EE5B0', size = 14 }) {
+function Sparkle({ color = '#00ffa3', size = 14 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
       <path d="M8 1.5L9.3 6.2L14 7.5L9.3 8.8L8 13.5L6.7 8.8L2 7.5L6.7 6.2L8 1.5Z" fill={color} />
@@ -446,16 +468,16 @@ function CheckGlyph({ size = 28, color = '#fff' }) {
 }
 function FrogAvatarSmall({ id = 'frog-avatar-sm', size = 36 }) {
   return (
-    <image-slot
+    <img
       id={id}
-      shape="rounded"
-      radius="8"
-      placeholder="frog"
-      src="frog.png"
+      src="mascot.png"
+      alt="Solayer mascot"
       style={{
         width: `${size}px`, height: `${size}px`,
         display: 'block', flexShrink: 0,
-        imageRendering: 'pixelated'
+        objectFit: 'contain', objectPosition: 'center',
+        borderRadius: 8,
+        imageRendering: 'auto'
       }} />);
 
 
@@ -466,6 +488,8 @@ function FrogAvatarSmall({ id = 'frog-avatar-sm', size = 36 }) {
 // ─────────────────────────────────────────────────────────────
 function FrogAgent({ theme, intensity = 1, showParticles = true }) {
   // phase: idle | listening | thinking | searching | confirming | paying | success
+  // open on the voice screen (the "talk, we order" selling point);
+  // chat is the optional fallback (keyboard button in the voice controls)
   const [phase, setPhase] = useState('listening');
   const [transcript, setTranscript] = useState('');
   const [intent, setIntent] = useState(null); // 'pizza' etc
@@ -605,7 +629,7 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
     setIntent(card.cat);setStoreIdx(0);setCart([card.item]);setPhase('confirming');
   }, []);
 
-  // tab navigation
+  // tab navigation — AI tab opens voice first; if a chat is already going, keep it
   const navTab = useCallback((k) => {
     if (k === 'ai') setPhase(messages.length ? 'idle' : 'listening');else
     if (k === 'card') setPhase('wallet');else
@@ -707,8 +731,7 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
 
         <div className="header-id">
             <div className="avatar-wrap">
-              <FrogAvatarSmall id="frog-header" size={40} />
-              <span className="avatar-sparkle"><Sparkle color={theme.accent} size={12} /></span>
+              <FrogAvatarSmall id="frog-header" size={52} />
             </div>
             <div className="header-text">
               <div className="header-title">{h.name}</div>
@@ -817,33 +840,29 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
         </div>
       }
 
-      {/* ── LISTENING / THINKING / SEARCHING: blob + svg frog ── */}
+      {/* ── LISTENING / THINKING / SEARCHING: voice orb + transcript ── */}
       {showStage &&
       <div className="stage">
-          {showParticles && <Particles theme={theme} listening={blobLive} />}
-          <Ripples theme={theme} show={showStage} />
+          {showParticles && phase !== 'listening' && <Particles theme={theme} listening={blobLive} />}
 
           <div className="blob-stack" onClick={blobLive ? stopAndProcess : undefined}>
-            <div className="blob-haze"
-          style={{ background: `radial-gradient(circle, ${theme.haze} 0%, transparent 70%)` }} />
             <div className="blob-scaler">
-              <MorphBlob theme={theme} listening={blobLive} />
+              <VoiceOrb theme={theme} listening={blobLive} />
             </div>
           </div>
 
           {phase === 'listening' &&
-        <div className="voice-bubble-wrap">
-              <div className="voice-bubble">
-                <div className="voice-bubble-bars" aria-hidden="true">
-                  <span /><span /><span /><span /><span /><span /><span />
-                </div>
-                <div className="voice-bubble-text">
-                  {transcript ? transcript :
-              <span className="vb-hint">say what you'd like to order…</span>
+        <div className="voice-stage-text">
+              <div className="voice-transcript">
+                {transcript ?
+              <span>{transcript}<span className="vt-caret" aria-hidden="true">|</span></span> :
+              <span className="vt-hint">say what you'd like to order…</span>
               }
-                </div>
               </div>
-              <div className="voice-bubble-tail" aria-hidden="true" />
+              <div className="voice-meta">
+                <span className="voice-dot" aria-hidden="true" />
+                <span className="voice-label">Listening</span>
+              </div>
             </div>
         }
           {phase === 'thinking' &&
@@ -996,24 +1015,32 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
           </div>
         }
         {phase === 'listening' &&
-        <div className="speak-footer">
-            <button className="send-fab" onClick={stopAndProcess} aria-label={transcript ? 'send' : 'stop recording'}>
-              <span className="send-fab-pulse" aria-hidden="true" />
-              <span className="send-fab-pulse delay" aria-hidden="true" />
-              <span className="send-fab-core">
+        <div className="voice-controls">
+            <button className="vc-side" onClick={() => {setTranscript('');setPhase('idle');}}
+              aria-label="cancel">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M5 5l8 8M13 5l-8 8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+              </svg>
+            </button>
+            <button className="vc-stop" onClick={stopAndProcess}
+              aria-label={transcript ? 'send' : 'stop recording'}>
+              <span className="vc-stop-core">
                 {transcript ?
-              <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-                    <path d="M11 17V5M11 5l-5 5M11 5l5 5" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+              <svg width="28" height="28" viewBox="0 0 22 22" fill="none">
+                    <path d="M11 17V5M11 5l-5 5M11 5l5 5" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
                   </svg> :
-
-              <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-                    <rect x="7" y="7" width="8" height="8" rx="2" fill="currentColor" />
+              <svg width="30" height="30" viewBox="0 0 22 22" fill="none">
+                    <rect x="5.5" y="5.5" width="11" height="11" rx="3" fill="currentColor" />
                   </svg>
               }
               </span>
             </button>
-            <button className="speak-skip" onClick={() => {setTranscript('');setPhase('idle');}}>
-              type instead
+            <button className="vc-side" onClick={() => {setTranscript('');setPhase('idle');}}
+              aria-label="type instead" title="type instead">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <rect x="2.5" y="4.5" width="13" height="9" rx="2" stroke="currentColor" strokeWidth="1.4"/>
+                <path d="M5 8.5h.6M7.2 8.5h.6M9.4 8.5h.6M11.6 8.5h.6M5 11h8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+              </svg>
             </button>
           </div>
         }
@@ -1112,7 +1139,7 @@ function ShieldGlyph() {
 
 }
 
-function SearchSpinner({ color = '#2EE5B0' }) {
+function SearchSpinner({ color = '#00ffa3' }) {
   return (
     <svg width="14" height="14" viewBox="0 0 14 14" style={{ verticalAlign: '-2px', marginRight: 6 }}>
       <circle cx="7" cy="7" r="5" stroke={color} strokeOpacity="0.25" strokeWidth="1.6" fill="none" />
@@ -1213,12 +1240,7 @@ function BottomTabs({ active, onNav, ordersCount, accent }) {
           aria-label={t.label}>
               {t.key === 'ai' &&
             <span className="tab-frog">
-                  <img src="frog.png" alt="" className="tab-frog-img" />
-                  <span className="tab-frog-sparkle" style={{ color: accent }}>
-                    <svg width="11" height="11" viewBox="0 0 16 16" fill="none">
-                      <path d="M8 1.5L9.3 6.2L14 7.5L9.3 8.8L8 13.5L6.7 8.8L2 7.5L6.7 6.2L8 1.5Z" fill="currentColor" />
-                    </svg>
-                  </span>
+                  <img src="mascot.png" alt="" className="tab-frog-img" />
                 </span>
             }
               {t.key === 'card' &&
@@ -1376,8 +1398,8 @@ function AccountScreen({ theme }) {
     <div className="account-area">
       <section className="account-header-card">
         <div className="account-avatar">
-          <image-slot id="account-avatar" shape="rounded" radius="14" src="frog.png"
-          style={{ width: '72px', height: '72px', display: 'block', imageRendering: 'pixelated' }} />
+          <img id="account-avatar" src="mascot.png" alt="Solayer mascot"
+          style={{ width: '72px', height: '72px', display: 'block', objectFit: 'contain', objectPosition: 'center', borderRadius: 14, imageRendering: 'auto' }} />
           <span className="account-sparkle"><Sparkle color={theme.accent} size={14} /></span>
         </div>
         <div className="account-id">

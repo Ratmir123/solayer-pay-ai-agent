@@ -191,39 +191,84 @@ function IOSDevice({
   children, width = 402, height = 874, dark = false,
   title, keyboard = false,
 }) {
+  const BEZEL = 9;        // screen-to-edge padding (titanium frame) — thin like iPhone 15/16 Pro
+  const OUTER_R = 57;     // outer corner radius (screen 48 + bezel 9)
   return (
     <div style={{
-      width, height, borderRadius: 48, overflow: 'hidden',
-      position: 'relative', background: dark ? '#000' : '#F2F2F7',
-      boxShadow: '0 40px 80px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.12)',
+      // OUTER FRAME — titanium iPhone body
+      width: width + BEZEL * 2,
+      height: height + BEZEL * 2,
+      padding: BEZEL,
+      boxSizing: 'border-box',
+      borderRadius: OUTER_R,
+      position: 'relative',
+      background: 'linear-gradient(135deg, #3a3d44 0%, #1f2126 28%, #0f1116 62%, #1a1c22 100%)',
+      boxShadow: [
+        '0 50px 100px rgba(0,0,0,0.45)',           // ambient drop
+        '0 18px 40px rgba(0,0,0,0.35)',            // closer drop
+        '0 0 0 0.5px rgba(255,255,255,0.18)',      // outer hairline catch-light
+        'inset 0 1.5px 0 rgba(255,255,255,0.22)',  // top edge highlight
+        'inset 0 -1.5px 0 rgba(0,0,0,0.55)',       // bottom edge shadow
+        'inset 1.5px 0 0 rgba(255,255,255,0.06)',  // left edge subtle
+        'inset -1.5px 0 0 rgba(0,0,0,0.4)',        // right edge subtle
+      ].join(', '),
       fontFamily: '-apple-system, system-ui, sans-serif',
       WebkitFontSmoothing: 'antialiased',
     }}>
-      {/* dynamic island */}
+      {/* side buttons */}
       <div style={{
-        position: 'absolute', top: 11, left: '50%', transform: 'translateX(-50%)',
-        width: 126, height: 37, borderRadius: 24, background: '#000', zIndex: 50,
+        position: 'absolute', left: -2, top: 110, width: 3, height: 32,
+        borderRadius: 2, background: 'linear-gradient(90deg, #0a0a0c, #2a2c30)',
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)',
       }} />
-      {/* status bar (absolute) */}
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 }}>
-        <IOSStatusBar dark={dark} />
-      </div>
-      {/* nav + content */}
-      <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-        {title !== undefined && <IOSNavBar title={title} dark={dark} />}
-        <div style={{ flex: 1, overflow: 'auto' }}>{children}</div>
-        {keyboard && <IOSKeyboard dark={dark} />}
-      </div>
-      {/* home indicator — always on top */}
       <div style={{
-        position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 60,
-        height: 34, display: 'flex', justifyContent: 'center', alignItems: 'flex-end',
-        paddingBottom: 8, pointerEvents: 'none',
+        position: 'absolute', left: -2, top: 178, width: 3, height: 58,
+        borderRadius: 2, background: 'linear-gradient(90deg, #0a0a0c, #2a2c30)',
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)',
+      }} />
+      <div style={{
+        position: 'absolute', left: -2, top: 248, width: 3, height: 58,
+        borderRadius: 2, background: 'linear-gradient(90deg, #0a0a0c, #2a2c30)',
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)',
+      }} />
+      <div style={{
+        position: 'absolute', right: -2, top: 200, width: 3, height: 96,
+        borderRadius: 2, background: 'linear-gradient(270deg, #0a0a0c, #2a2c30)',
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)',
+      }} />
+
+      {/* INNER SCREEN */}
+      <div style={{
+        width: '100%', height: '100%', borderRadius: 48, overflow: 'hidden',
+        position: 'relative', background: dark ? '#000' : '#F2F2F7',
+        boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.85), inset 0 0 0 2px rgba(255,255,255,0.04)',
       }}>
+        {/* dynamic island */}
         <div style={{
-          width: 139, height: 5, borderRadius: 100,
-          background: dark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.25)',
+          position: 'absolute', top: 11, left: '50%', transform: 'translateX(-50%)',
+          width: 126, height: 37, borderRadius: 24, background: '#000', zIndex: 50,
         }} />
+        {/* status bar (absolute) */}
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 }}>
+          <IOSStatusBar dark={dark} />
+        </div>
+        {/* nav + content */}
+        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+          {title !== undefined && <IOSNavBar title={title} dark={dark} />}
+          <div style={{ flex: 1, overflow: 'auto' }}>{children}</div>
+          {keyboard && <IOSKeyboard dark={dark} />}
+        </div>
+        {/* home indicator — always on top */}
+        <div style={{
+          position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 60,
+          height: 34, display: 'flex', justifyContent: 'center', alignItems: 'flex-end',
+          paddingBottom: 8, pointerEvents: 'none',
+        }}>
+          <div style={{
+            width: 139, height: 5, borderRadius: 100,
+            background: dark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.25)',
+          }} />
+        </div>
       </div>
     </div>
   );

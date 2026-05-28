@@ -6,17 +6,22 @@
   <title>Solayer Pay — Frog Voice Agent</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://api.fontshare.com" crossorigin>
+  <!-- Satoshi (primary brand font, matches the Solayer app Figma file) -->
+  <link href="https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,600,700,900&display=swap" rel="stylesheet">
+  <!-- Geist as fallback / monospace -->
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link href="agent.css" rel="stylesheet">
   <style>
-    :root { color-scheme: light; }
+    :root { color-scheme: dark; }
     html, body { margin: 0; padding: 0; height: 100%; }
+    html { background: #050606; }
     body {
-      font-family: 'Geist', -apple-system, system-ui, sans-serif;
+      font-family: 'Satoshi', 'Geist', -apple-system, system-ui, sans-serif;
       background:
-        radial-gradient(ellipse at 30% 20%, #f3ecdd 0%, transparent 55%),
-        radial-gradient(ellipse at 70% 80%, #e9e1d1 0%, transparent 50%),
-        #ece4d3;
+        radial-gradient(ellipse at 50% 0%, rgba(0,255,163,0.10) 0%, transparent 55%),
+        radial-gradient(ellipse at 70% 80%, #0a0a0c 0%, transparent 50%),
+        #050606;
       min-height: 100%;
       display: flex;
       align-items: center;
@@ -27,7 +32,7 @@
     }
     body.theme-solayerAI {
       background:
-        radial-gradient(ellipse at 50% 0%, #0a2519 0%, transparent 55%),
+        radial-gradient(ellipse at 50% 0%, rgba(0,255,163,0.10) 0%, transparent 55%),
         radial-gradient(ellipse at 70% 80%, #0a0a0c 0%, transparent 50%),
         #050606;
     }
