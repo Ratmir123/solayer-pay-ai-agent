@@ -38,6 +38,5 @@ logs/
 # Claude Code local settings (keep personal, do not share)
 .claude/settings.local.json
 
-# Large / source assets — the app ships the generated .webp strips, not these
-Mascot_anim/
+# Large source asset — the app ships the generated .webp strips, not this
 mascot animation.mp4
