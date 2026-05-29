@@ -4,23 +4,35 @@
 // Exports: IOSDevice, IOSStatusBar, IOSNavBar, IOSGlassPill, IOSList, IOSListRow, IOSKeyboard
 
 // ─────────────────────────────────────────────────────────────
-// Status bar
+// iPhone 16 hardware metrics (logical points — Dynamic Island model)
+// ─────────────────────────────────────────────────────────────
+const IPHONE16 = { W: 393, H: 852 };        // logical resolution (@3x = 1179×2556)
+const ISLAND = { W: 125, H: 37, TOP: 11 };  // Dynamic Island pill
+const STATUS_H = 54;                        // status-bar height
+
+// ─────────────────────────────────────────────────────────────
+// Status bar — time in the leading ear, signal/wifi/battery in the
+// trailing ear, both centered beside the Dynamic Island like real iOS
 // ─────────────────────────────────────────────────────────────
 function IOSStatusBar({ dark = false, time = '9:41' }) {
   const c = dark ? '#fff' : '#000';
+  // each "ear" spans from the screen edge to the Dynamic Island; content sits
+  // centered inside it, vertically aligned to the Island's band.
+  const ear = {
+    position: 'absolute', top: ISLAND.TOP, height: ISLAND.H,
+    width: `calc(50% - ${ISLAND.W / 2 + 4}px)`,
+    display: 'flex', alignItems: 'center',
+  };
   return (
-    <div style={{
-      display: 'flex', gap: 154, alignItems: 'center', justifyContent: 'center',
-      padding: '21px 24px 19px', boxSizing: 'border-box',
-      position: 'relative', zIndex: 20, width: '100%',
-    }}>
-      <div style={{ flex: 1, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', paddingTop: 1.5 }}>
+    <div style={{ position: 'relative', width: '100%', height: STATUS_H, zIndex: 20 }}>
+      <div style={{ ...ear, left: 0, justifyContent: 'center' }}>
         <span style={{
-          fontFamily: '-apple-system, "SF Pro", system-ui', fontWeight: 590,
-          fontSize: 17, lineHeight: '22px', color: c,
+          fontFamily: '-apple-system, "SF Pro Text", system-ui', fontWeight: 600,
+          fontSize: 17, lineHeight: '22px', letterSpacing: 0.2, color: c,
+          fontVariantNumeric: 'tabular-nums',
         }}>{time}</span>
       </div>
-      <div style={{ flex: 1, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, paddingTop: 1, paddingRight: 1 }}>
+      <div style={{ ...ear, right: 0, justifyContent: 'center', gap: 7 }}>
         <svg width="19" height="12" viewBox="0 0 19 12">
           <rect x="0" y="7.5" width="3.2" height="4.5" rx="0.7" fill={c}/>
           <rect x="4.8" y="5" width="3.2" height="7" rx="0.7" fill={c}/>
@@ -188,11 +200,12 @@ function IOSList({ header, children, dark = false }) {
 // Device frame
 // ─────────────────────────────────────────────────────────────
 function IOSDevice({
-  children, width = 402, height = 874, dark = false,
+  children, width = IPHONE16.W, height = IPHONE16.H, dark = false,
   title, keyboard = false,
 }) {
-  const BEZEL = 9;        // screen-to-edge padding (titanium frame) — thin like iPhone 15/16 Pro
-  const OUTER_R = 57;     // outer corner radius (screen 48 + bezel 9)
+  const SCREEN_R = 55;               // iPhone 16 display corner radius
+  const BEZEL = 10;                  // screen-to-edge padding (aluminium frame)
+  const OUTER_R = SCREEN_R + BEZEL;  // outer body corner radius
   return (
     <div style={{
       // OUTER FRAME — titanium iPhone body
@@ -215,38 +228,49 @@ function IOSDevice({
       fontFamily: '-apple-system, system-ui, sans-serif',
       WebkitFontSmoothing: 'antialiased',
     }}>
-      {/* side buttons */}
+      {/* side buttons — iPhone 16 layout */}
+      {/* left · Action button */}
       <div style={{
-        position: 'absolute', left: -2, top: 110, width: 3, height: 32,
+        position: 'absolute', left: -2, top: 116, width: 3, height: 30,
         borderRadius: 2, background: 'linear-gradient(90deg, #0a0a0c, #2a2c30)',
         boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)',
       }} />
+      {/* left · Volume Up */}
       <div style={{
-        position: 'absolute', left: -2, top: 178, width: 3, height: 58,
+        position: 'absolute', left: -2, top: 170, width: 3, height: 56,
         borderRadius: 2, background: 'linear-gradient(90deg, #0a0a0c, #2a2c30)',
         boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)',
       }} />
+      {/* left · Volume Down */}
       <div style={{
-        position: 'absolute', left: -2, top: 248, width: 3, height: 58,
+        position: 'absolute', left: -2, top: 236, width: 3, height: 56,
         borderRadius: 2, background: 'linear-gradient(90deg, #0a0a0c, #2a2c30)',
         boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)',
       }} />
+      {/* right · Side (power) button */}
       <div style={{
-        position: 'absolute', right: -2, top: 200, width: 3, height: 96,
+        position: 'absolute', right: -2, top: 176, width: 3, height: 82,
         borderRadius: 2, background: 'linear-gradient(270deg, #0a0a0c, #2a2c30)',
         boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)',
+      }} />
+      {/* right · Camera Control (new on iPhone 16) */}
+      <div style={{
+        position: 'absolute', right: -2.5, top: 286, width: 3.5, height: 34,
+        borderRadius: 2, background: 'linear-gradient(270deg, #0a0a0c, #34363c)',
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.12)',
       }} />
 
       {/* INNER SCREEN */}
       <div style={{
-        width: '100%', height: '100%', borderRadius: 48, overflow: 'hidden',
+        width: '100%', height: '100%', borderRadius: SCREEN_R, overflow: 'hidden',
         position: 'relative', background: dark ? '#000' : '#F2F2F7',
         boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.85), inset 0 0 0 2px rgba(255,255,255,0.04)',
       }}>
-        {/* dynamic island */}
+        {/* Dynamic Island */}
         <div style={{
-          position: 'absolute', top: 11, left: '50%', transform: 'translateX(-50%)',
-          width: 126, height: 37, borderRadius: 24, background: '#000', zIndex: 50,
+          position: 'absolute', top: ISLAND.TOP, left: '50%', transform: 'translateX(-50%)',
+          width: ISLAND.W, height: ISLAND.H, borderRadius: ISLAND.H / 2,
+          background: '#000', zIndex: 50,
         }} />
         {/* status bar (absolute) */}
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 }}>

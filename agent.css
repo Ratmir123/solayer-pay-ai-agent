@@ -140,6 +140,8 @@
   display: flex; flex-direction: column;
   padding: 18px 0 0; min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior-y: contain;
 }
 /* anchor the idle content (categories + greeting) to the bottom, just above the
    composer; the auto margin collapses to 0 once the chat grows tall enough to
@@ -202,6 +204,9 @@
   letter-spacing: -0.005em;
   color: var(--ink);
   word-break: break-word;
+  /* unbreakable strings (long URLs, tokens) shouldn't be able to widen the
+     bubble past max-width and trigger horizontal page scroll */
+  overflow-wrap: anywhere;
 }
 .bubble-frog {
   background: var(--bubble);
@@ -214,18 +219,24 @@
   background: var(--accent); color: #0a1a14; font-weight: 500;
   border-bottom-right-radius: 8px;
 }
-.theme-indigo .bubble-user { color: #fff; }
+/* indigo + lily accents are mid-luminance — dark ink fails AA on them.
+   white text restores ≥4.5:1 contrast on both. */
+.theme-indigo .bubble-user,
+.theme-lily .bubble-user { color: #fff; }
 
 .wave-emoji {
   display: inline-block; transform-origin: 70% 70%;
-  animation: wave 1.8s ease-in-out infinite;
+  /* one-shot wave on mount, then rests — keeps the perpetual ambient motion
+     reserved for the mascot avatar so they don't compete for attention. */
+  animation: wave 1.4s var(--ease-out) 1 both;
+  animation-delay: 360ms;
 }
 @keyframes wave {
   0%, 100% { transform: rotate(0); }
-  20% { transform: rotate(18deg); }
-  40% { transform: rotate(-12deg); }
-  60% { transform: rotate(14deg); }
-  80% { transform: rotate(-6deg); }
+  18% { transform: rotate(18deg); }
+  38% { transform: rotate(-12deg); }
+  58% { transform: rotate(14deg); }
+  78% { transform: rotate(-6deg); }
 }
 
 /* ─── stage (listening/thinking/searching) ─── */
@@ -531,8 +542,7 @@
 }
 .vb-hint { color: var(--sub); font-style: italic; }
 
-/* ─── popular categories (idle screen) ─── */
-.cat-section { padding: 4px 18px 4px; display: flex; flex-direction: column; gap: 12px; }
+/* ─── section heads (used by wallet + menu screens) ─── */
 .section-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .section-title {
   margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -0.01em;
@@ -543,73 +553,9 @@
   font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
   color: var(--sub);
 }
-
-.cat-row {
-  display: flex; gap: 14px;
-  padding: 4px 0 12px;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.cat-row::-webkit-scrollbar { display: none; }
-
-.cat-item {
-  appearance: none; border: none; background: transparent;
-  display: flex; flex-direction: column; align-items: center; gap: 8px;
-  flex-shrink: 0;
-  width: 72px;
-  padding: 4px 0;
-  cursor: pointer;
-  font-family: inherit;
-  animation: chipIn .42s var(--ease-out) backwards;
-  transition: transform .16s var(--ease-out);
-}
-.cat-item:active { transform: scale(0.95); }
-.cat-circle {
-  width: 64px; height: 64px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  position: relative;
-  background:
-    radial-gradient(circle at 50% 65%, color-mix(in srgb, var(--cat-tint, #888) 38%, transparent) 0%, transparent 55%),
-    radial-gradient(circle at 35% 28%, rgba(255,255,255,0.10), transparent 50%),
-    linear-gradient(180deg, #1a1a1d 0%, #0f0f10 100%);
-  border: 1px solid rgba(255,255,255,0.06);
-  box-shadow:
-    inset 0 -2px 0 rgba(0,0,0,0.45),
-    inset 0 1px 0 rgba(255,255,255,0.04),
-    0 8px 18px rgba(0,0,0,0.35);
-  transition: transform .25s ease, box-shadow .25s ease;
-}
-.cat-circle::after {
-  content: ''; position: absolute; inset: -1px;
-  border-radius: 50%; pointer-events: none;
-  background:
-    radial-gradient(circle at 50% 95%,
-      color-mix(in srgb, var(--cat-tint, #888) 32%, transparent) 0%,
-      transparent 38%);
-  filter: blur(6px);
-  opacity: 0.7;
-  z-index: -1;
-}
-.cat-item:hover .cat-circle {
-  transform: translateY(-2px) scale(1.04);
-  box-shadow:
-    inset 0 -2px 0 rgba(0,0,0,0.45),
-    inset 0 1px 0 rgba(255,255,255,0.06),
-    0 14px 24px rgba(0,0,0,0.4),
-    0 0 0 1px color-mix(in srgb, var(--cat-tint, #888) 45%, transparent);
-}
-.theme-lily .cat-circle {
-  background:
-    radial-gradient(circle at 50% 65%, color-mix(in srgb, var(--cat-tint, #888) 30%, transparent) 0%, transparent 55%),
-    radial-gradient(circle at 35% 28%, rgba(255,255,255,0.55), transparent 50%),
-    linear-gradient(180deg, #fafaf2 0%, #ecebd9 100%);
-  border-color: rgba(15,31,6,0.08);
-  box-shadow:
-    inset 0 -2px 0 rgba(15,31,6,0.06),
-    0 6px 14px rgba(15,31,6,0.12);
-}
-.cat-emoji { font-size: 28px; line-height: 1; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
-.cat-label { font-size: 13px; font-weight: 500; color: var(--ink); letter-spacing: -0.005em; }
+/* idle-screen .cat-section / .cat-row / .cat-item / .cat-circle / .cat-emoji
+   / .cat-label removed — replaced by .quick-chips (see "IDLE CHAT v2" block).
+   Confirmed via project-wide grep that nothing else references them. */
 
 /* ─── BROWSE screen ─── */
 .browse-area {
@@ -1082,10 +1028,16 @@
 }
 .inline-order-card:hover {
   border-color: color-mix(in srgb, var(--accent) 50%, transparent);
-  background: rgba(255,255,255,0.08);
+  background: var(--surface-soft-hover);
 }
-.theme-lily .inline-order-card:hover { background: rgba(15,31,6,0.06); }
 .inline-order-card:active { transform: scale(0.98); }
+.inline-order-card:focus-visible {
+  outline: none;
+  border-color: color-mix(in srgb, var(--accent) 70%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 50%, transparent);
+}
+/* let the text bubble land first, then the card follows — quiet stagger */
+.frog-msg-stack .inline-order-card { animation-delay: 120ms; }
 
 .ioc-emoji {
   width: 40px; height: 40px; flex-shrink: 0;
@@ -1098,10 +1050,15 @@
   flex: 1; min-width: 0;
   display: flex; flex-direction: column; gap: 2px; line-height: 1.2;
 }
-.ioc-store { font-size: 14px; font-weight: 600; letter-spacing: -0.005em; }
+.ioc-store {
+  font-size: 14px; font-weight: 600; letter-spacing: -0.005em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 .ioc-meta {
-  font-size: 11px; color: var(--sub);
+  font-size: 12px;
+  color: color-mix(in srgb, var(--ink) 72%, transparent);
   font-family: 'Geist Mono', monospace; letter-spacing: 0.02em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .ioc-cta {
   display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
@@ -1119,10 +1076,6 @@
   font-family: 'Geist Mono', monospace;
 }
 
-/* the secondary "Order something else" categories block — quieter */
-.cat-section.quiet { padding-top: 14px; opacity: 0.95; }
-.cat-section.quiet .section-title { font-size: 14px; font-weight: 500; color: var(--sub); }
-
 /* ─── composer (text + mic) on idle screen ─── */
 .composer {
   display: flex; align-items: center; gap: 8px;
@@ -1130,38 +1083,98 @@
   background: var(--chip);
   border: 1px solid var(--chip-border);
   border-radius: 999px;
-  padding: 6px 6px 6px 18px;
+  /* 4px vertical padding × 44px button = 52px overall height, stable across
+     all themes. left padding stays larger for breathing room around input. */
+  padding: 4px 4px 4px 18px;
   backdrop-filter: blur(14px) saturate(160%);
   -webkit-backdrop-filter: blur(14px) saturate(160%);
-  transition: border-color .15s ease, background .15s ease;
+  transition:
+    border-color .2s ease,
+    background .2s ease,
+    box-shadow .24s var(--ease-out);
 }
 .composer:focus-within {
-  border-color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 70%, var(--chip-border));
   background: rgba(255,255,255,0.08);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 14%, transparent);
 }
-.theme-lily .composer:focus-within { background: rgba(15,31,6,0.06); }
+.theme-lily .composer:focus-within {
+  background: rgba(15,31,6,0.06);
+}
 .composer-input {
   flex: 1; min-width: 0;
   appearance: none; border: none; outline: none; background: transparent;
   color: var(--ink);
   font-family: inherit; font-size: 15px;
   letter-spacing: -0.005em;
-  height: 42px;
+  height: 44px;
   padding: 0;
+  /* prevent iOS Safari from auto-zooming on focus (kicks in <16px) */
+  -webkit-text-size-adjust: 100%;
+  /* keep very long pasted strings from blowing out the row */
+  text-overflow: ellipsis;
 }
-.composer-input::placeholder { color: var(--sub); }
+.composer-input::placeholder {
+  color: color-mix(in srgb, var(--ink) 55%, transparent);
+}
+
+/* mic↔send live in the same slot and crossfade as the input gains text.
+   keeping both mounted (instead of swapping) lets the morph stay smooth
+   and interruptible. */
+.composer-actions {
+  position: relative;
+  width: 44px; height: 44px;
+  flex-shrink: 0;
+}
 .composer-mic, .composer-send {
   appearance: none; border: none; cursor: pointer;
-  width: 40px; height: 40px; border-radius: 999px;
+  position: absolute; inset: 0;
+  width: 44px; height: 44px; border-radius: 999px;
   display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
   background: var(--primary-pill);
   color: var(--primary-pill-ink);
-  box-shadow: 0 6px 18px rgba(8,77,62,0.45);
-  transition: transform .14s var(--ease-out), filter .15s ease;
+  /* shadow follows the primary-pill hue (deep green is brand-locked across
+     all three themes, but we still tint via color-mix so lily's light canvas
+     gets a slightly softer landing than the dark themes) */
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--primary-pill) 50%, transparent);
+  opacity: 0; visibility: hidden;
+  transform: scale(0.84);
+  pointer-events: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    opacity .18s var(--ease-out),
+    transform .22s var(--ease-out),
+    filter .15s ease,
+    box-shadow .2s ease,
+    visibility 0s linear .22s;
+}
+.composer-actions[data-active="mic"] .composer-mic,
+.composer-actions[data-active="send"] .composer-send {
+  opacity: 1; visibility: visible;
+  transform: scale(1);
+  pointer-events: auto;
+  transition:
+    opacity .2s var(--ease-out),
+    transform .24s var(--ease-out),
+    filter .15s ease,
+    box-shadow .2s ease,
+    visibility 0s linear 0s;
 }
 .composer-mic:hover, .composer-send:hover { filter: brightness(1.08); }
-.composer-mic:active, .composer-send:active { transform: scale(0.94); }
+.composer-actions[data-active="mic"] .composer-mic:active,
+.composer-actions[data-active="send"] .composer-send:active {
+  transform: scale(0.94);
+  transition: transform .12s var(--ease-out);
+}
+/* keyboard focus ring on the active button only — the inactive one is
+   tabindex=-1 + aria-hidden, so it shouldn't show focus state. */
+.composer-actions[data-active="mic"] .composer-mic:focus-visible,
+.composer-actions[data-active="send"] .composer-send:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--accent) 60%, transparent),
+    0 6px 18px color-mix(in srgb, var(--primary-pill) 50%, transparent);
+}
 
 /* clipboard icon badge */
 .icon-btn { position: relative; }
@@ -1822,8 +1835,10 @@
   position: relative;
   width: var(--orb); height: var(--orb);
   display: flex; align-items: center; justify-content: center;
-  transform: scale(calc(0.95 + var(--vlive) * 0.11));
-  transition: transform .14s cubic-bezier(0.3, 0, 0.2, 1);
+  transform: scale(calc(0.93 + var(--vlive) * 0.3));
+  /* No CSS transition here: a transition on this var()-derived transform
+     freezes unreliably in Chromium. Smoothness comes from the JS --vol
+     low-pass (see frog-agent.jsx audio loop), which is what runs live. */
 }
 
 /* stage — disc + edge glow + beam live in ONE box of the exact sphere size,
@@ -1847,8 +1862,8 @@
       color-mix(in srgb, var(--bottom) 55%, transparent) 0%,
       transparent 52%);
   filter: blur(30px);
-  opacity: calc(0.5 + var(--vlive) * 0.6);
-  transform: scale(calc(0.94 + var(--vlive) * 0.16));
+  opacity: calc(0.45 + var(--vlive) * 1.05);
+  transform: scale(calc(0.9 + var(--vlive) * 0.34));
   transition: opacity .18s ease, transform .18s ease;
   z-index: 0; pointer-events: none;
 }
@@ -1904,7 +1919,12 @@
 }
 
 /* floating diffuse blobs — drift inside the sphere (AE "wiggle" circles) */
-.vorb-blobs { position: absolute; inset: 0; z-index: 2; }
+.vorb-blobs {
+  position: absolute; inset: 0; z-index: 2;
+  /* the liquid surges outward as you speak */
+  transform: scale(calc(1 + var(--vlive) * 0.36));
+  transition: transform .1s ease-out;
+}
 .vb-blob {
   position: absolute;
   border-radius: 50%;
@@ -2012,7 +2032,7 @@
   border-radius: 50%;
   z-index: 6; pointer-events: none;
   --glow: 0.12;
-  --g: calc(var(--glow) + var(--vlive) * 1.25);
+  --g: calc(var(--glow) + var(--vlive) * 2.3);
   /* subtle at idle, swells with voice */
   box-shadow:
     0 0 calc(8px + var(--g) * 34px) calc(0px + var(--g) * 7px)
@@ -2049,7 +2069,7 @@
           mask: radial-gradient(circle var(--orb-r) at 50% 50%,
     transparent calc(100% - 3.4px), #000 calc(100% - 2.6px), #000 calc(100% - 0.8px), transparent 100%);
   mix-blend-mode: screen;
-  opacity: calc(0.7 + var(--vlive) * 0.3);
+  opacity: calc(0.62 + var(--vlive) * 0.5);
   animation: vorbEdgeFade 1.15s ease 0.15s backwards;
 }
 /* the travelling light — only the slice over the ring mask is visible,
@@ -2134,7 +2154,7 @@
 }
 
 /* live: brighter bloom + faster blob drift */
-.vorb.is-live .vorb-bloom { opacity: calc(0.6 + var(--vlive) * 0.6); }
+.vorb.is-live .vorb-bloom { opacity: calc(0.55 + var(--vlive) * 1.1); }
 .vorb.is-live .vb-b1 { animation-duration: 5s; }
 .vorb.is-live .vb-b2 { animation-duration: 6s; }
 .vorb.is-live .vb-b3 { animation-duration: 4.5s; }
@@ -2346,4 +2366,238 @@
 .blob-scaler {
   transform: none !important;
   animation: none !important;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   IDLE CHAT v2 — compact greeting hero + slim category chips
+   ───────────────────────────────────────────────────────────── */
+
+/* idle-empty becomes the vertically-centered focal composition:
+   greeting + chips group sits as one calm block in the available
+   space between header and composer. flex:1 cancels the inherited
+   margin-top:auto from .chat-area, then justify-content:center
+   balances the negative space top/bottom. */
+.idle-empty {
+  flex: 1 1 auto;
+  margin-top: 0;
+  display: flex; flex-direction: column;
+  justify-content: center;
+  gap: 24px;
+  padding: 24px 0 28px;
+  min-height: 0;
+}
+
+/* idle hero — centered greeting (no bubble); the one confident focal point */
+.greet-hero {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 8px;
+  padding: 0 24px;
+  text-align: center;
+  animation: greetIn .5s var(--ease-out) both;
+  animation-delay: 60ms;
+}
+@keyframes greetIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.greet-hero .greet-hello {
+  font-size: 14px; font-weight: 500;
+  color: color-mix(in srgb, var(--ink) 70%, transparent);
+  letter-spacing: 0.01em;
+  line-height: 1.25;
+}
+.greet-hero .greet-line {
+  font-size: 28px; font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  margin: 0;
+}
+
+/* slow auto-drift dish carousel — also swipeable; soft side masks, inset from
+   the phone edges. Drift + pause-on-touch handled in the DishCarousel component. */
+.dish-carousel {
+  display: flex; align-items: center;
+  gap: 8px;
+  padding: 8px 26px;
+  overflow-x: auto; overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 42px, #000 calc(100% - 42px), transparent 100%);
+          mask-image: linear-gradient(to right, transparent 0, #000 42px, #000 calc(100% - 42px), transparent 100%);
+}
+.dish-carousel::-webkit-scrollbar { display: none; }
+/* drifting chips must not snap or stagger-animate */
+.dish-carousel .quick-chip { scroll-snap-align: none; animation: none; }
+
+/* compact horizontal-scroll category chips */
+.quick-chips {
+  display: flex; align-items: center;
+  gap: 8px;
+  padding: 6px 18px 6px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+  scroll-padding-left: 18px;
+  /* mask the scroll-clipped right edge into a soft fade so it reads as
+     "more to scroll" instead of an abrupt cut. left edge is transparent
+     through the padding region so chips that scroll off fade out cleanly
+     while the resting first chip stays fully opaque (it sits at 18px). */
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 12px,
+    #000 calc(100% - 12px),
+    transparent 100%);
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 12px,
+    #000 calc(100% - 12px),
+    transparent 100%);
+}
+.quick-chips::-webkit-scrollbar { display: none; }
+
+/* secondary "Order something else" treatment — quieter, with a hairline */
+.quick-chips-quiet {
+  padding-top: 12px;
+  padding-bottom: 4px;
+  margin-top: 8px;
+  border-top: 1px solid color-mix(in srgb, var(--chip-border) 70%, transparent);
+}
+
+/* single quiet affordance in conversation state — one small text pill that
+   reveals the full chip strip on tap. avoids re-stating the 8 emoji circles
+   beneath every conversational turn. */
+.quick-chips-more-row {
+  padding: 10px 18px 4px;
+  margin-top: 4px;
+  border-top: 1px solid color-mix(in srgb, var(--chip-border) 70%, transparent);
+}
+.quick-chip-add {
+  appearance: none;
+  cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: transparent;
+  border: 1px dashed color-mix(in srgb, var(--ink) 22%, transparent);
+  color: color-mix(in srgb, var(--ink) 72%, transparent);
+  font-family: inherit;
+  font-size: 13px; font-weight: 500;
+  letter-spacing: -0.005em;
+  line-height: 1;
+  transition:
+    color .18s ease,
+    background .18s ease,
+    border-color .18s ease,
+    transform .14s var(--ease-out);
+  -webkit-tap-highlight-color: transparent;
+}
+.quick-chip-add:hover {
+  color: var(--ink);
+  background: var(--surface-soft);
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--chip-border));
+}
+.quick-chip-add:active { transform: scale(0.97); }
+.quick-chip-add:focus-visible {
+  outline: none;
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--accent) 70%, var(--chip-border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.quick-chip {
+  appearance: none; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 8px;
+  flex-shrink: 0;
+  scroll-snap-align: start;
+  /* 44px min tap height (WCAG 2.5.5 target-size). */
+  min-height: 44px;
+  padding: 0 16px 0 10px;
+  border-radius: 999px;
+  background: var(--chip);
+  border: 1px solid var(--chip-border);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 13.5px; font-weight: 500;
+  letter-spacing: -0.005em;
+  line-height: 1;
+  white-space: nowrap;
+  transition:
+    transform .16s var(--ease-out),
+    background .18s ease,
+    border-color .18s ease,
+    box-shadow .18s ease;
+  animation: chipIn .42s var(--ease-out) backwards;
+  will-change: transform;
+  -webkit-tap-highlight-color: transparent;
+}
+.quick-chip:hover {
+  border-color: color-mix(in srgb, var(--cat-tint, var(--accent)) 55%, var(--chip-border));
+  background: color-mix(in srgb, var(--cat-tint, var(--accent)) 9%, var(--chip));
+  transform: translateY(-1px);
+}
+.quick-chip:active { transform: scale(0.97); }
+.quick-chip:focus-visible {
+  outline: none;
+  border-color: color-mix(in srgb, var(--accent) 70%, var(--chip-border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+.quick-chip-emoji {
+  width: 26px; height: 26px;
+  flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  font-size: 14px; line-height: 1;
+  background:
+    radial-gradient(circle at 50% 60%,
+      color-mix(in srgb, var(--cat-tint, #888) 42%, transparent) 0%,
+      transparent 72%),
+    var(--surface-soft);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 5%, transparent);
+}
+
+/* theme-lily light surface variants */
+.theme-lily .quick-chip:hover {
+  background: color-mix(in srgb, var(--cat-tint, var(--accent)) 11%, var(--chip));
+}
+.theme-lily .quick-chip-emoji {
+  background:
+    radial-gradient(circle at 50% 60%,
+      color-mix(in srgb, var(--cat-tint, #888) 30%, transparent) 0%,
+      transparent 72%),
+    var(--surface-soft);
+}
+
+/* reduce-motion: keep the calm fade for comprehension, drop the rise
+   and the press-scale that simulate physical motion. */
+@media (prefers-reduced-motion: reduce) {
+  .greet-hero,
+  .quick-chip,
+  .frog-msg-stack .inline-order-card {
+    animation-duration: .2s;
+    animation-delay: 0s;
+    animation-name: greetFadeOnly;
+  }
+  .quick-chip:hover,
+  .quick-chip:active,
+  .quick-chip-add:active { transform: none; }
+  .wave-emoji { animation: none; }
+  .composer-mic, .composer-send {
+    transition:
+      opacity .15s ease,
+      visibility 0s linear .15s;
+    transform: scale(1) !important;
+  }
+}
+@keyframes greetFadeOnly {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }

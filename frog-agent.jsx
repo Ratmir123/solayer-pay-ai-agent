@@ -25,7 +25,9 @@ const THEMES = {
     pill: 'rgba(255,255,255,0.10)',
     pillInk: '#ffffff',
     primaryPill: '#084d3e',
-    primaryPillInk: '#ffffff'
+    primaryPillInk: '#ffffff',
+    surfaceSoft: 'rgba(255,255,255,0.04)',
+    surfaceSoftHover: 'rgba(255,255,255,0.08)'
   },
   indigo: {
     label: 'Indigo',
@@ -43,7 +45,9 @@ const THEMES = {
     pill: 'rgba(255,255,255,0.10)',
     pillInk: '#ffffff',
     primaryPill: '#084D3E',
-    primaryPillInk: '#ffffff'
+    primaryPillInk: '#ffffff',
+    surfaceSoft: 'rgba(255,255,255,0.04)',
+    surfaceSoftHover: 'rgba(255,255,255,0.08)'
   },
   lily: {
     label: 'Lily',
@@ -61,7 +65,9 @@ const THEMES = {
     pill: 'rgba(255,255,255,0.7)',
     pillInk: '#0f1f06',
     primaryPill: '#084D3E',
-    primaryPillInk: '#ffffff'
+    primaryPillInk: '#ffffff',
+    surfaceSoft: 'rgba(15,31,6,0.04)',
+    surfaceSoftHover: 'rgba(15,31,6,0.07)'
   }
 };
 
@@ -273,7 +279,8 @@ function useMic(active, levelRef, hostRef, recRef) {
             sum += data[i] * w;
           }
           const avg = sum / data.length / 220;
-          smoothed = smoothed * 0.7 + avg * 0.3;
+          // heavier low-pass = smoother, floatier orb scaling ("плавнее")
+          smoothed = smoothed * 0.85 + avg * 0.15;
           const v = Math.max(0, Math.min(1.4, smoothed));
           levelRef.current = v;
           if (hostRef.current) hostRef.current.style.setProperty('--vol', v.toFixed(3));
@@ -617,6 +624,15 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
   const [messages, setMessages] = useState([]);
   // composer text (chat screen typing)
   const [typed, setTyped] = useState('');
+  // in-conversation: reveal the full category strip when the user wants more
+  const [showMoreChips, setShowMoreChips] = useState(false);
+  // computed once on mount — time-of-day greeting word for the idle hero
+  const [timeGreeting] = useState(() => {
+    const h = new Date().getHours();
+    if (h < 12) return 'Good morning';
+    if (h < 18) return 'Good afternoon';
+    return 'Good evening';
+  });
   // recording duration
   const [elapsed, setElapsed] = useState(0);
   // orders history
@@ -804,7 +820,7 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
 
   // ── header copy by phase ──
   const headerByPhase = {
-    idle: { name: 'Solayer AI', sub: messages.length ? `${Math.ceil(messages.length / 2)} · ready for next order` : 'You talk, we order' },
+    idle: { name: 'Solayer AI', sub: messages.length ? 'ready when you are' : 'your everyday ordering AI' },
     listening: { name: 'Solayer AI', sub: 'tap when finished' },
     thinking: { name: 'Solayer AI', sub: 'hmm, let me think' },
     searching: { name: 'Solayer AI', sub: `searching nearby ${intent || ''}…` },
@@ -849,6 +865,8 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
       '--pill-ink': theme.pillInk,
       '--primary-pill': theme.primaryPill,
       '--primary-pill-ink': theme.primaryPillInk,
+      '--surface-soft': theme.surfaceSoft,
+      '--surface-soft-hover': theme.surfaceSoftHover,
       '--intensity': intensity
     }}>
 
@@ -890,86 +908,78 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
         </button>
       </header>
 
-      {/* ── IDLE: chat thread + categories + greeting ── */}
+      {/* ── IDLE: greeting hero + compact category chips ── */}
       {phase === 'idle' &&
       <div className="chat-area">
-          {messages.length === 0 &&
-        <div className="cat-section">
-              <div className="section-row">
-                <h3 className="section-title">Popular categories</h3>
-                <span className="section-tag">most ordered</span>
+          {messages.length === 0 ?
+        <div className="idle-empty">
+              <div className="greet-hero">
+                <span className="greet-hello">
+                  {timeGreeting} <span className="wave-emoji" aria-hidden="true">👋</span>
+                </span>
+                <span className="greet-line" role="heading" aria-level={2}>What are you craving?</span>
               </div>
-              <div className="cat-row" role="list">
-                {CATEGORIES.map((c, i) =>
-            <button key={c.key} className="cat-item"
-            style={{ animationDelay: `${i * 50}ms` }}
-            onClick={() => pickCategory(c.key)}>
-                    <span className="cat-circle" style={{ '--cat-tint': c.tint }}>
-                      <span className="cat-emoji">{c.emoji}</span>
-                    </span>
-                    <span className="cat-label">{c.label}</span>
-                  </button>
-            )}
-              </div>
-            </div>
-        }
+              <DishCarousel categories={CATEGORIES} onPick={pickCategory} />
+            </div> :
 
-          <div className="chat-thread">
-            {messages.length === 0 ?
-          <div className="msg msg-frog">
-                <div className="bubble bubble-frog">
-                  <span>Hey!</span> <span className="wave-emoji">👋</span>{' '}
-                  <span>Pick a category or tap the mic and tell me what you're craving.</span>
-                </div>
-              </div> :
+        <>
+              <div className="chat-thread">
+                {messages.map((m) =>
+            m.from === 'user' ?
+            <div key={m.id} className="msg msg-user">
+                      <div className="bubble bubble-user">{m.text}</div>
+                    </div> :
 
-          messages.map((m) =>
-          m.from === 'user' ?
-          <div key={m.id} className="msg msg-user">
-                    <div className="bubble bubble-user">{m.text}</div>
-                  </div> :
-
-          <div key={m.id} className="msg msg-frog">
-                    <div className="frog-msg-stack">
-                      <div className="bubble bubble-frog">{m.text}</div>
-                      {m.card?.kind === 'order' &&
-              <button className="inline-order-card" onClick={() => acceptOrderCard(m.card)}>
-                          <span className="ioc-emoji" style={{ background: m.card.store.swatch }}>{CATEGORIES.find((c) => c.key === m.card.cat)?.emoji}</span>
-                          <span className="ioc-body">
-                            <span className="ioc-store">{m.card.store.name}</span>
-                            <span className="ioc-meta">{m.card.store.rating}★ · {m.card.store.eta} · {m.card.store.dist}</span>
-                          </span>
-                          <span className="ioc-cta">
-                            <span className="ioc-price">${m.card.item.price.toFixed(2)}</span>
-                            <span className="ioc-action">order →</span>
-                          </span>
-                        </button>
+            <div key={m.id} className="msg msg-frog">
+                      <div className="frog-msg-stack">
+                        <div className="bubble bubble-frog">{m.text}</div>
+                        {m.card?.kind === 'order' &&
+              <button
+                className="inline-order-card"
+                type="button"
+                onClick={() => acceptOrderCard(m.card)}
+                aria-label={`Order from ${m.card.store.name}, $${m.card.item.price.toFixed(2)}`}>
+                            <span className="ioc-emoji" aria-hidden="true" style={{ background: m.card.store.swatch }}>{CATEGORIES.find((c) => c.key === m.card.cat)?.emoji}</span>
+                            <span className="ioc-body">
+                              <span className="ioc-store">{m.card.store.name}</span>
+                              <span className="ioc-meta">{m.card.store.rating}★ · {m.card.store.eta} · {m.card.store.dist}</span>
+                            </span>
+                            <span className="ioc-cta">
+                              <span className="ioc-price">${m.card.item.price.toFixed(2)}</span>
+                              <span className="ioc-action" aria-hidden="true">order →</span>
+                            </span>
+                          </button>
               }
+                      </div>
                     </div>
-                  </div>
-
-          )
-          }
-          </div>
-
-          {messages.length > 0 &&
-        <div className="cat-section quiet">
-              <div className="section-row">
-                <h3 className="section-title">Order something else</h3>
+            )
+            }
               </div>
-              <div className="cat-row" role="list">
-                {CATEGORIES.map((c, i) =>
-            <button key={c.key} className="cat-item"
-            style={{ animationDelay: `${i * 30}ms` }}
-            onClick={() => pickCategory(c.key)}>
-                    <span className="cat-circle" style={{ '--cat-tint': c.tint }}>
-                      <span className="cat-emoji">{c.emoji}</span>
-                    </span>
-                    <span className="cat-label">{c.label}</span>
+              {!showMoreChips ?
+            <div className="quick-chips-more-row">
+                  <button
+                className="quick-chip-add"
+                type="button"
+                onClick={() => setShowMoreChips(true)}
+                aria-expanded="false"
+                aria-label="Order something else">
+                    <span aria-hidden="true">+</span> order something else
                   </button>
-            )}
-              </div>
-            </div>
+                </div> :
+            <div className="quick-chips quick-chips-quiet" role="list" aria-label="Order something else">
+                  {CATEGORIES.map((c, i) =>
+              <button key={c.key} className="quick-chip"
+              type="button"
+              style={{ '--cat-tint': c.tint, animationDelay: `${i * 25}ms` }}
+              onClick={() => {pickCategory(c.key);setShowMoreChips(false);}}
+              aria-label={`Order ${c.label.toLowerCase()}`}>
+                      <span className="quick-chip-emoji" aria-hidden="true">{c.emoji}</span>
+                      <span className="quick-chip-label">{c.label}</span>
+                    </button>
+              )}
+                </div>
+            }
+            </>
         }
         </div>
       }
@@ -1120,7 +1130,7 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
       {(phase === 'idle' || phase === 'listening' || phase === 'thinking' || phase === 'searching') &&
       <footer className="agent-footer">
         {phase === 'idle' &&
-        <div className="composer">
+        <div className="composer" role="search">
             <input
             className="composer-input"
             type="text"
@@ -1128,19 +1138,36 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
             onChange={(e) => setTyped(e.target.value)}
             onKeyDown={(e) => {if (e.key === 'Enter') submitTyped();}}
             placeholder="Type or tap mic to order…"
-            aria-label="Order request" />
-          
-            {typed.trim() ?
-          <button className="composer-send" onClick={submitTyped} aria-label="send">
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                  <path d="M9 14V4M9 4l-5 5M9 4l5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button> :
+            aria-label="Type your order"
+            inputMode="text"
+            enterKeyHint="send"
+            autoComplete="off"
+            autoCorrect="off"
+            spellCheck={false}
+            maxLength={240} />
 
-          <button className="composer-mic" onClick={startListen} aria-label="tap to speak">
+            <div className="composer-actions" data-active={typed.trim() ? 'send' : 'mic'}>
+              <button
+                className="composer-mic"
+                type="button"
+                onClick={startListen}
+                aria-label="Speak your order"
+                tabIndex={typed.trim() ? -1 : 0}
+                aria-hidden={typed.trim() ? 'true' : undefined}>
                 <MicGlyph />
               </button>
-          }
+              <button
+                className="composer-send"
+                type="button"
+                onClick={submitTyped}
+                aria-label="Send order"
+                tabIndex={typed.trim() ? 0 : -1}
+                aria-hidden={typed.trim() ? undefined : 'true'}>
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+                  <path d="M9 14V4M9 4l-5 5M9 4l5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            </div>
           </div>
         }
         {phase === 'listening' &&
@@ -1163,6 +1190,104 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
       <BottomTabs active={activeTab} onNav={navTab} ordersCount={orders.upcoming.length} accent={theme.accent} />
     </div>);
 
+}
+
+// ─────────────────────────────────────────────────────────────
+// Idle dish carousel — slow auto-drift you can also swipe. Two copies make a
+// seamless loop; drift pauses on touch/hover so chips stay tappable, and is
+// disabled (static + freely swipeable) under prefers-reduced-motion.
+// ─────────────────────────────────────────────────────────────
+function DishCarousel({ categories, onPick }) {
+  const ref = useRef(null);
+  const pausedRef = useRef(false);
+  const resumeRef = useRef(0);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return undefined;
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return undefined; // no auto-drift — still freely swipeable
+    }
+    const n = categories.length;
+    const SPEED = 28; // px/sec — calm, slow (frame-rate independent)
+    let raf = 0, loop = 0, pos = 0, last = 0;
+
+    const measure = () => {
+      const second = el.children[n];
+      // distance to advance exactly one copy — padding-agnostic
+      loop = second ? Math.round(second.offsetLeft - el.children[0].offsetLeft) : 0;
+    };
+    const tick = (ts) => {
+      if (el && !pausedRef.current) {
+        if (loop <= 0) measure(); // self-correct until layout/fonts settle
+        if (loop > 0) {
+          // accumulate in a float (scrollLeft rounds to int, so a sub-pixel +=
+          // read back from scrollLeft never advances); time-based so the speed
+          // is identical regardless of display refresh rate
+          const dt = last ? Math.min(ts - last, 50) : 16;
+          pos += SPEED * dt / 1000;
+          if (pos >= loop) pos -= loop;
+          el.scrollLeft = pos;
+        }
+      }
+      last = ts;
+      raf = requestAnimationFrame(tick);
+    };
+    // re-measure once fonts settle so a late font swap can't leave a seam
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { loop = 0; });
+    raf = requestAnimationFrame(tick);
+
+    const pause = () => { pausedRef.current = true; clearTimeout(resumeRef.current); };
+    const resume = () => {
+      clearTimeout(resumeRef.current);
+      resumeRef.current = setTimeout(() => {
+        // carry over wherever a manual swipe left it
+        if (el && loop > 0) pos = el.scrollLeft % loop;
+        pausedRef.current = false;
+      }, 2000);
+    };
+    const onWheel = () => { pause(); resume(); };
+    el.addEventListener('pointerenter', pause);
+    el.addEventListener('pointerdown', pause);
+    el.addEventListener('pointerup', resume);
+    el.addEventListener('pointerleave', resume);
+    el.addEventListener('touchstart', pause, { passive: true });
+    el.addEventListener('touchend', resume, { passive: true });
+    el.addEventListener('wheel', onWheel, { passive: true });
+
+    return () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(resumeRef.current);
+      el.removeEventListener('pointerenter', pause);
+      el.removeEventListener('pointerdown', pause);
+      el.removeEventListener('pointerup', resume);
+      el.removeEventListener('pointerleave', resume);
+      el.removeEventListener('touchstart', pause);
+      el.removeEventListener('touchend', resume);
+      el.removeEventListener('wheel', onWheel);
+    };
+  }, [categories]);
+
+  return (
+    <div className="dish-carousel" ref={ref} role="group" aria-label="Food categories">
+      {[0, 1].map((copy) =>
+        categories.map((c) =>
+          <button
+            key={`${copy}-${c.key}`}
+            className="quick-chip"
+            type="button"
+            style={{ '--cat-tint': c.tint }}
+            tabIndex={copy === 1 ? -1 : 0}
+            aria-hidden={copy === 1 ? 'true' : undefined}
+            onClick={() => onPick(c.key)}
+            aria-label={`Order ${c.label.toLowerCase()}`}>
+            <span className="quick-chip-emoji" aria-hidden="true">{c.emoji}</span>
+            <span className="quick-chip-label">{c.label}</span>
+          </button>
+        )
+      )}
+    </div>
+  );
 }
 
 // ─────────────────────────────────────────────────────────────
