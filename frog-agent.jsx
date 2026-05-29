@@ -225,10 +225,10 @@ function detectIntent(text) {
 
 // Seed orders history
 const SEED_PAST_ORDERS = [
-{ id: 'p1', store: 'Tokyo Sushi', emoji: '🍣', swatch: '#0e7490', summary: 'Salmon avocado roll, miso soup', when: '2 days ago', status: 'done', statusLabel: 'delivered', total: 24.00 },
-{ id: 'p2', store: 'Bean Lab', emoji: '☕', swatch: '#78350f', summary: 'Iced oat latte', when: '3 days ago', status: 'done', statusLabel: 'delivered', total: 6.50 },
-{ id: 'p3', store: 'Solana Wheels', emoji: '🚗', swatch: '#1e40af', summary: 'Ride to Mission St', when: '5 days ago', status: 'done', statusLabel: 'completed', total: 12.40 },
-{ id: 'p4', store: 'Smash House', emoji: '🐔', swatch: '#9a3412', summary: '2 items · burger + fries', when: 'last week', status: 'done', statusLabel: 'delivered', total: 21.50 }];
+{ id: 'p1', store: 'Tokyo Sushi', cat: 'sushi', emoji: '🍣', swatch: '#0e7490', summary: 'Salmon avocado roll, miso soup', when: '2 days ago', status: 'done', statusLabel: 'delivered', total: 24.00 },
+{ id: 'p2', store: 'Bean Lab', cat: 'coffee', emoji: '☕', swatch: '#78350f', summary: 'Iced oat latte', when: '3 days ago', status: 'done', statusLabel: 'delivered', total: 6.50 },
+{ id: 'p3', store: 'Solana Wheels', cat: 'ride', emoji: '🚗', swatch: '#1e40af', summary: 'Ride to Mission St', when: '5 days ago', status: 'done', statusLabel: 'completed', total: 12.40 },
+{ id: 'p4', store: 'Smash House', cat: 'burger', emoji: '🐔', swatch: '#9a3412', summary: '2 items · burger + fries', when: 'last week', status: 'done', statusLabel: 'delivered', total: 21.50 }];
 
 
 // ─────────────────────────────────────────────────────────────
@@ -795,27 +795,27 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
     if (!intent) return;
     setStoreIdx((i) => (i + 1) % STORES[intent].length);
   }, [intent]);
-  const confirmPay = useCallback(() => {
-    setPhase('paying');
-    setTimeout(() => {
-      // record the order, then advance to success
-      setOrders((prev) => {
-        const cat = CATEGORIES.find((c) => c.key === intent);
-        const newOrder = {
-          id: `o-${Date.now()}`,
-          store: store?.name || 'Store',
-          emoji: cat?.emoji || '🍴',
-          swatch: store?.swatch || '#444',
-          summary: cart.length === 1 ? cart[0].name : `${cart.reduce((n, l) => n + l.qty, 0)} items`,
-          when: 'just now',
-          status: 'preparing',
-          statusLabel: `ETA ${store?.eta || '20 min'}`,
-          total: cartTotal
-        };
-        return { ...prev, upcoming: [newOrder, ...prev.upcoming] };
-      });
-      setPhase('success');
-    }, 1900);
+  // Face ID hold completes → record the order and go straight to success.
+  // (The old standalone "paying" screen is gone; biometric auth now lives inside
+  // the Review-order screen, so there's no redundant price+FaceID step.)
+  const placeOrder = useCallback(() => {
+    setOrders((prev) => {
+      const cat = CATEGORIES.find((c) => c.key === intent);
+      const newOrder = {
+        id: `o-${Date.now()}`,
+        store: store?.name || 'Store',
+        cat: intent,
+        emoji: cat?.emoji || '🍴',
+        swatch: store?.swatch || '#444',
+        summary: cart.length === 1 ? cart[0].name : `${cart.reduce((n, l) => n + l.qty, 0)} items`,
+        when: 'just now',
+        status: 'preparing',
+        statusLabel: `ETA ${store?.eta || '20 min'}`,
+        total: cartTotal
+      };
+      return { ...prev, upcoming: [newOrder, ...prev.upcoming] };
+    });
+    setPhase('success');
   }, [intent, store, cart, cartTotal]);
 
   // ── header copy by phase ──
@@ -827,7 +827,6 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
     browse: { name: CATEGORIES.find((c) => c.key === intent)?.label || 'Browse', sub: `${(STORES[intent] || []).length} places nearby` },
     menu: { name: store?.name || 'Menu', sub: store ? `${store.rating}★ · ${store.eta} · ${store.dist}` : '' },
     confirming: { name: 'Review order', sub: store?.name || '' },
-    paying: { name: 'Solayer Pay', sub: `paying $${cartTotal.toFixed(2)}` },
     success: { name: 'Order placed', sub: store ? `${store.name} · ETA ${store.eta}` : '' },
     orders: { name: 'Your orders', sub: `${orders.upcoming.length} upcoming · ${orders.past.length} past` },
     wallet: { name: 'Card', sub: 'Solayer Pay · USDC on Solana' },
@@ -872,15 +871,15 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
 
       {/* header — adapts to phase */}
       <header className="agent-header">
-        {phase === 'confirming' || phase === 'paying' || phase === 'success' || phase === 'browse' || phase === 'menu' ?
+        {phase === 'confirming' || phase === 'success' || phase === 'browse' || phase === 'menu' || phase === 'orders' ?
         <button className="icon-btn back-btn" onClick={() => {
           if (phase === 'menu') {setPhase('browse');setCart([]);} else
           if (phase === 'confirming') {setPhase(menu.length ? 'menu' : 'idle');} else
           goIdle();
-        }} aria-label="back">
+        }} aria-label={phase === 'orders' ? 'back to chat' : 'back'}>
             <ChevLeft color={theme.ink} />
           </button> :
-        phase === 'orders' || phase === 'wallet' || phase === 'account' ?
+        phase === 'wallet' || phase === 'account' ?
         <div className="icon-btn" aria-hidden="true" style={{ width: 40, height: 40 }} /> :
 
         <div className="header-id">
@@ -893,7 +892,7 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
             </div>
           </div>
         }
-        {(phase === 'confirming' || phase === 'paying' || phase === 'success' || phase === 'browse' || phase === 'menu' || phase === 'orders') &&
+        {(phase === 'confirming' || phase === 'success' || phase === 'browse' || phase === 'menu' || phase === 'orders') &&
         <div className="header-center">
             <div className="header-title-center">{h.name}</div>
             <div className="header-sub-center">{h.sub}</div>
@@ -935,18 +934,21 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
                         <div className="bubble bubble-frog">{m.text}</div>
                         {m.card?.kind === 'order' &&
               <button
-                className="inline-order-card"
+                className="order-suggest"
                 type="button"
                 onClick={() => acceptOrderCard(m.card)}
-                aria-label={`Order from ${m.card.store.name}, $${m.card.item.price.toFixed(2)}`}>
-                            <span className="ioc-emoji" aria-hidden="true" style={{ background: m.card.store.swatch }}>{CATEGORIES.find((c) => c.key === m.card.cat)?.emoji}</span>
-                            <span className="ioc-body">
-                              <span className="ioc-store">{m.card.store.name}</span>
-                              <span className="ioc-meta">{m.card.store.rating}★ · {m.card.store.eta} · {m.card.store.dist}</span>
+                aria-label={`Review order from ${m.card.store.name}, $${m.card.item.price.toFixed(2)}`}>
+                            <span className="os-thumb" aria-hidden="true"
+                  style={{ backgroundColor: m.card.store.swatch, backgroundImage: `url('images/cat-${m.card.cat}.png')` }} />
+                            <span className="os-body">
+                              <span className="os-store">{m.card.store.name}</span>
+                              <span className="os-meta">{m.card.store.rating}★ · {m.card.store.eta} · {m.card.store.dist}</span>
                             </span>
-                            <span className="ioc-cta">
-                              <span className="ioc-price">${m.card.item.price.toFixed(2)}</span>
-                              <span className="ioc-action" aria-hidden="true">order →</span>
+                            <span className="os-cta" aria-hidden="true">
+                              <span className="os-price">${m.card.item.price.toFixed(2)}</span>
+                              <span className="os-go">
+                                <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M5 3l5 4.5L5 12" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                              </span>
                             </span>
                           </button>
               }
@@ -1063,31 +1065,22 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
 
       }
 
-      {/* ── CONFIRMING: review cart ── */}
+      {/* ── CONFIRMING: review order + Face-ID hold-to-pay (paying merged in) ── */}
       {phase === 'confirming' && store &&
       <div className="screen-pad confirm-pad">
-          <div className="msg msg-frog tight">
-            <FrogAvatarSmall id="frog-confirm" size={36} />
-            <div className="bubble bubble-frog">
-              <span>Ordering from <b>{store.name}</b> — <b>${cartTotal.toFixed(2)}</b>.
-                Ready in {store.eta}. Confirm with Solayer Pay?</span>
-            </div>
-          </div>
-
           <article className="store-card">
-            <header className="store-card-head">
-              <div className="store-thumb" style={{ background: store.swatch }}>
-                <span className="store-emoji">{CATEGORIES.find((c) => c.key === intent)?.emoji}</span>
-              </div>
-              <div className="store-id">
+            <div className="store-card-hero"
+          style={{ backgroundColor: store.swatch, backgroundImage: `url('images/cat-${intent}.png')` }}>
+              <div className="store-card-hero-shade" aria-hidden="true" />
+              <div className="store-card-hero-id">
                 <div className="store-name">{store.name}</div>
                 <div className="store-meta">
-                  <span className="meta-pill"><Star color="#FFC857" /> {store.rating}</span>
-                  <span className="meta-pill"><Pin /> {store.dist}</span>
-                  <span className="meta-pill">{store.eta}</span>
+                  <span className="meta-pill ghost"><Star color="#FFC857" /> {store.rating}</span>
+                  <span className="meta-pill ghost"><Pin color="#fff" /> {store.dist}</span>
+                  <span className="meta-pill ghost">{store.eta}</span>
                 </div>
               </div>
-            </header>
+            </div>
 
             <ul className="cart-lines">
               {cart.map((l) =>
@@ -1102,23 +1095,13 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
 
             <div className="cart-totals">
               <div className="cart-total-row"><span>subtotal</span><span>${cartTotal.toFixed(2)}</span></div>
-              <div className="cart-total-row"><span>network fee</span><span className="good">$0.00</span></div>
+              <div className="cart-total-row"><span>network fee</span><span className="good">$0.00 · gasless</span></div>
               <div className="cart-total-row grand"><span>total</span><span>${cartTotal.toFixed(2)} USDC</span></div>
             </div>
-
-            <div className="store-actions">
-              <button className="cta primary" onClick={confirmPay}>
-                <ShieldGlyph />
-                <span>Pay with Solayer</span>
-              </button>
-            </div>
           </article>
-        </div>
-      }
 
-      {/* ── PAYING: Solayer Pay biometric ── */}
-      {phase === 'paying' && store &&
-      <PayingScreen theme={theme} store={store} total={cartTotal} />
+          <FaceIdHold theme={theme} amount={cartTotal} store={store} onComplete={placeOrder} />
+        </div>
       }
 
       {/* ── SUCCESS: receipt ── */}
@@ -1193,99 +1176,88 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Idle dish carousel — slow auto-drift you can also swipe. Two copies make a
-// seamless loop; drift pauses on touch/hover so chips stay tappable, and is
-// disabled (static + freely swipeable) under prefers-reduced-motion.
+// Idle dish carousel — buttery auto-drift. The motion is a GPU-composited
+// translate3d on an inner track (NOT scrollLeft, which rounds to whole pixels
+// and visibly stutters at slow speeds). Two identical copies make a seamless
+// loop. A speed multiplier eases to 0 on touch/hover and back to 1 on release,
+// so the drift decelerates and re-accelerates softly instead of snapping. Under
+// prefers-reduced-motion it's a static, freely-swipeable single row.
 // ─────────────────────────────────────────────────────────────
 function DishCarousel({ categories, onPick }) {
-  const ref = useRef(null);
-  const pausedRef = useRef(false);
-  const resumeRef = useRef(0);
+  const trackRef = useRef(null);
+  const speedRef = useRef(1);   // eased current multiplier (0..1)
+  const targetRef = useRef(1);  // 0 = paused, 1 = running
+  const [reduce] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return undefined;
-    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      return undefined; // no auto-drift — still freely swipeable
-    }
+    if (reduce) return undefined; // static row, swipeable via CSS overflow
+    const track = trackRef.current;
+    if (!track) return undefined;
+    const SPEED = 20; // px/sec — calm, premium drift (frame-rate independent)
     const n = categories.length;
-    const SPEED = 28; // px/sec — calm, slow (frame-rate independent)
-    let raf = 0, loop = 0, pos = 0, last = 0;
+    let raf = 0, pos = 0, last = 0, loop = 0;
 
+    // advance = distance from copy-A's first chip to copy-B's first chip.
+    // (padding-agnostic; scrollWidth/2 would be wrong because the track's end
+    // padding isn't repeated between the two copies → a seam every cycle.)
     const measure = () => {
-      const second = el.children[n];
-      // distance to advance exactly one copy — padding-agnostic
-      loop = second ? Math.round(second.offsetLeft - el.children[0].offsetLeft) : 0;
+      const second = track.children[n];
+      loop = second ? Math.round(second.offsetLeft - track.children[0].offsetLeft) : 0;
     };
     const tick = (ts) => {
-      if (el && !pausedRef.current) {
-        if (loop <= 0) measure(); // self-correct until layout/fonts settle
-        if (loop > 0) {
-          // accumulate in a float (scrollLeft rounds to int, so a sub-pixel +=
-          // read back from scrollLeft never advances); time-based so the speed
-          // is identical regardless of display refresh rate
-          const dt = last ? Math.min(ts - last, 50) : 16;
-          pos += SPEED * dt / 1000;
-          if (pos >= loop) pos -= loop;
-          el.scrollLeft = pos;
-        }
-      }
+      if (!loop) measure(); // self-correct until layout/fonts settle
+      const dt = last ? Math.min(ts - last, 50) : 16;
       last = ts;
+      // ease the speed toward its target → soft decel on touch, soft accel on release
+      speedRef.current += (targetRef.current - speedRef.current) * 0.06;
+      if (loop > 0) {
+        pos += SPEED * speedRef.current * dt / 1000;
+        if (pos >= loop) pos -= loop;
+        track.style.transform = `translate3d(${(-pos).toFixed(2)}px,0,0)`;
+      }
       raf = requestAnimationFrame(tick);
     };
-    // re-measure once fonts settle so a late font swap can't leave a seam
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { loop = 0; });
     raf = requestAnimationFrame(tick);
 
-    const pause = () => { pausedRef.current = true; clearTimeout(resumeRef.current); };
-    const resume = () => {
-      clearTimeout(resumeRef.current);
-      resumeRef.current = setTimeout(() => {
-        // carry over wherever a manual swipe left it
-        if (el && loop > 0) pos = el.scrollLeft % loop;
-        pausedRef.current = false;
-      }, 2000);
-    };
-    const onWheel = () => { pause(); resume(); };
-    el.addEventListener('pointerenter', pause);
-    el.addEventListener('pointerdown', pause);
-    el.addEventListener('pointerup', resume);
-    el.addEventListener('pointerleave', resume);
-    el.addEventListener('touchstart', pause, { passive: true });
-    el.addEventListener('touchend', resume, { passive: true });
-    el.addEventListener('wheel', onWheel, { passive: true });
-
+    const pause = () => { targetRef.current = 0; };
+    const resume = () => { targetRef.current = 1; };
+    track.addEventListener('pointerenter', pause);
+    track.addEventListener('pointerleave', resume);
+    track.addEventListener('pointerdown', pause);
+    window.addEventListener('pointerup', resume);
     return () => {
       cancelAnimationFrame(raf);
-      clearTimeout(resumeRef.current);
-      el.removeEventListener('pointerenter', pause);
-      el.removeEventListener('pointerdown', pause);
-      el.removeEventListener('pointerup', resume);
-      el.removeEventListener('pointerleave', resume);
-      el.removeEventListener('touchstart', pause);
-      el.removeEventListener('touchend', resume);
-      el.removeEventListener('wheel', onWheel);
+      track.removeEventListener('pointerenter', pause);
+      track.removeEventListener('pointerleave', resume);
+      track.removeEventListener('pointerdown', pause);
+      window.removeEventListener('pointerup', resume);
     };
-  }, [categories]);
+  }, [categories, reduce]);
 
+  const copies = reduce ? [0] : [0, 1];
   return (
-    <div className="dish-carousel" ref={ref} role="group" aria-label="Food categories">
-      {[0, 1].map((copy) =>
-        categories.map((c) =>
-          <button
-            key={`${copy}-${c.key}`}
-            className="quick-chip"
-            type="button"
-            style={{ '--cat-tint': c.tint }}
-            tabIndex={copy === 1 ? -1 : 0}
-            aria-hidden={copy === 1 ? 'true' : undefined}
-            onClick={() => onPick(c.key)}
-            aria-label={`Order ${c.label.toLowerCase()}`}>
-            <span className="quick-chip-emoji" aria-hidden="true">{c.emoji}</span>
-            <span className="quick-chip-label">{c.label}</span>
-          </button>
-        )
-      )}
+    <div className={`dish-carousel${reduce ? ' is-static' : ''}`} role="group" aria-label="Food categories">
+      <div className="dish-track" ref={trackRef}>
+        {copies.map((copy) =>
+          categories.map((c) =>
+            <button
+              key={`${copy}-${c.key}`}
+              className="quick-chip dish-chip"
+              type="button"
+              style={{ '--cat-tint': c.tint }}
+              tabIndex={copy === 1 ? -1 : 0}
+              aria-hidden={copy === 1 ? 'true' : undefined}
+              onClick={() => onPick(c.key)}
+              aria-label={`Order ${c.label.toLowerCase()}`}>
+              <span className="quick-chip-emoji" aria-hidden="true">{c.emoji}</span>
+              <span className="quick-chip-label">{c.label}</span>
+            </button>
+          )
+        )}
+      </div>
     </div>
   );
 }
@@ -1293,60 +1265,65 @@ function DishCarousel({ categories, onPick }) {
 // ─────────────────────────────────────────────────────────────
 // Solayer Pay screen
 // ─────────────────────────────────────────────────────────────
-function PayingScreen({ theme, store, total }) {
-  const [held, setHeld] = useState(0);
-  useEffect(() => {
-    let raf,t0 = performance.now();
-    const tick = (t) => {
-      const p = Math.min(1, (t - t0) / 1800);
-      setHeld(p);
-      if (p < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+// Hold-to-pay with Face ID — the biometric ring + glyph that used to live on a
+// separate "paying" screen, now embedded at the foot of Review order. The ring
+// fill is a CSS `--p` transition (smooth, GPU-friendly); completion is a
+// setTimeout so it fires reliably even when the tab is backgrounded. Press-and-
+// hold (pointer) or hold Enter/Space (keyboard) authorizes the payment.
+function FaceIdHold({ theme, amount, store, onComplete }) {
+  const [holding, setHolding] = useState(false);
+  const [done, setDone] = useState(false);
+  const timerRef = useRef(0);
+  const doneRef = useRef(false);
+  const [reduce] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const DUR = reduce ? 320 : 1500;
+
+  const begin = useCallback(() => {
+    if (doneRef.current) return;
+    setHolding(true);
+    clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      doneRef.current = true;
+      setDone(true);
+      setTimeout(() => onComplete && onComplete(), 480); // brief "authorized" beat
+    }, DUR);
+  }, [DUR, onComplete]);
+
+  const cancel = useCallback(() => {
+    if (doneRef.current) return;
+    setHolding(false);
+    clearTimeout(timerRef.current);
   }, []);
+
+  useEffect(() => () => clearTimeout(timerRef.current), []);
+
   return (
-    <div className="screen-pad pay-screen">
-      <div className="pay-amount">
-        <div className="pay-currency">USDC</div>
-        <div className="pay-total">${total.toFixed(2)}</div>
-        <div className="pay-sub">to {store.name}</div>
-      </div>
-
-      <div className="pay-source">
-        <div className="pay-source-row">
-          <div className="pay-source-id">
-            <div className="pay-logo">
-              <Sparkle color={theme.accent} size={14} />
-            </div>
-            <div>
-              <div className="pay-source-name">Solayer Wallet</div>
-              <div className="pay-source-bal">balance · 2,481.39 USDC</div>
-            </div>
-          </div>
-          <div className="pay-net">Solana · gasless</div>
-        </div>
-        <div className="pay-source-row">
-          <div className="pay-source-lbl">network fee</div>
-          <div className="pay-source-val">$0.00</div>
-        </div>
-        <div className="pay-source-row total">
-          <div className="pay-source-lbl">you pay</div>
-          <div className="pay-source-val pay-source-final">${total.toFixed(2)} USDC</div>
-        </div>
-      </div>
-
-      <div className="pay-biometric">
-        <div className="pay-bio-ring" style={{
-          background: `conic-gradient(${theme.primaryPill} ${held * 360}deg, rgba(255,255,255,0.06) 0deg)`
-        }}>
-          <div className="pay-bio-inner">
-            <FaceIdGlyph color={theme.ink} />
-          </div>
-        </div>
-        <div className="pay-bio-label">
-          {held < 1 ? 'Hold to confirm with Face ID' : 'authorized'}
-        </div>
+    <div className="pay-confirm">
+      <button
+        type="button"
+        className={`pay-bio${holding ? ' is-holding' : ''}${done ? ' is-done' : ''}`}
+        style={{ '--dur': `${DUR}ms` }}
+        onPointerDown={(e) => { e.preventDefault(); begin(); }}
+        onPointerUp={cancel}
+        onPointerLeave={cancel}
+        onPointerCancel={cancel}
+        onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && !e.repeat) { e.preventDefault(); begin(); } }}
+        onKeyUp={(e) => { if (e.key === 'Enter' || e.key === ' ') cancel(); }}
+        aria-label={`Hold to pay $${amount.toFixed(2)} with Face ID`}>
+        <span className="pay-bio-ring" aria-hidden="true">
+          <span className="pay-bio-inner">
+            {done ? <CheckGlyph size={30} color={theme.ink} /> : <FaceIdGlyph color={theme.ink} />}
+          </span>
+        </span>
+        <span className="pay-bio-label">
+          {done ? 'Authorized' : <>Hold to pay <b>${amount.toFixed(2)}</b> with Face ID</>}
+        </span>
+      </button>
+      <div className="pay-bio-meta">
+        <Sparkle color={theme.accent} size={12} />
+        <span>Solayer Wallet · Solana · gasless</span>
       </div>
     </div>);
 
@@ -1670,16 +1647,9 @@ function BrowseScreen({ category, stores, onPick, accent }) {
   if (!category) return null;
   return (
     <div className="browse-area">
-      <div className="browse-filterbar">
-        <span className="filter-chip is-active">All</span>
-        <span className="filter-chip">Top rated</span>
-        <span className="filter-chip">Under 20m</span>
-        <span className="filter-chip">Solayer Pay ✓</span>
-      </div>
-
       <div className="browse-count">
         <span><b>{stores.length} places</b> nearby</span>
-        <span className="browse-sort">sort: distance ↓</span>
+        <span className="browse-sort">sorted by distance</span>
       </div>
 
       <div className="browse-list">
@@ -1687,19 +1657,20 @@ function BrowseScreen({ category, stores, onPick, accent }) {
         <button key={s.name} className="browse-card"
         style={{ animationDelay: `${i * 70}ms` }}
         onClick={() => onPick(i)}>
-            <div className="browse-img" style={{ background: s.swatch }}>
-              <div className="browse-img-stripe" aria-hidden="true" />
-              <div className="browse-img-emoji">{category.emoji}</div>
+            <div className="browse-img"
+          style={{ backgroundColor: s.swatch, backgroundImage: `url('images/cat-${category.key}.png')` }}>
+              <div className="browse-img-shade" aria-hidden="true" />
               <div className="browse-img-tag">
                 <span className="dot" style={{ background: accent }} />
                 <span>Solayer Pay</span>
               </div>
-              <button className="browse-heart" onClick={(e) => e.stopPropagation()} aria-label="favorite">
+              <span className="browse-heart" role="button" tabIndex={-1}
+            onClick={(e) => e.stopPropagation()} aria-label="favorite">
                 <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                   <path d="M9 15.5s-5.5-3.4-5.5-7.2A3.3 3.3 0 0 1 9 6.4a3.3 3.3 0 0 1 5.5 1.9c0 3.8-5.5 7.2-5.5 7.2z"
                 stroke="#fff" strokeWidth="1.6" strokeLinejoin="round" fill="rgba(0,0,0,0.25)" />
                 </svg>
-              </button>
+              </span>
             </div>
             <div className="browse-info">
               <div className="browse-name-row">
@@ -1730,47 +1701,50 @@ function BrowseScreen({ category, stores, onPick, accent }) {
 function MenuScreen({ theme, store, category, menu, qtyOf, onAdd, onDec, cart, cartTotal, cartCount, onCheckout }) {
   return (
     <div className="menu-area">
-      {/* hero */}
-      <div className="menu-hero" style={{ background: store.swatch }}>
-        <div className="browse-img-stripe" aria-hidden="true" />
-        <div className="menu-hero-emoji">{category.emoji}</div>
-        <div className="menu-hero-tag">
-          <span className="dot" style={{ background: theme.accent }} />
-          <span>Solayer Pay accepted</span>
+      {/* scroller — everything above the pinned cart bar */}
+      <div className="menu-scroll">
+        {/* hero — real category photo with the store identity overlaid */}
+        <div className="menu-hero"
+          style={{ backgroundColor: store.swatch, backgroundImage: `url('images/cat-${category.key}.png')` }}>
+          <div className="menu-hero-shade" aria-hidden="true" />
+          <div className="menu-hero-info">
+            <div className="menu-hero-name">{store.name}</div>
+            <div className="menu-hero-meta">
+              <span className="meta-pill ghost"><Star color="#FFC857" /> {store.rating}</span>
+              <span className="meta-pill ghost">{store.eta}</span>
+              <span className="meta-pill ghost"><Pin color="#fff" /> {store.dist}</span>
+            </div>
+          </div>
+          <div className="menu-hero-tag">
+            <span className="dot" style={{ background: theme.accent }} />
+            <span>Solayer Pay</span>
+          </div>
         </div>
-      </div>
 
-      {/* store meta strip */}
-      <div className="menu-meta-strip">
-        <span className="meta-pill"><Star color="#FFC857" /> {store.rating}</span>
-        <span className="meta-pill">{store.eta}</span>
-        <span className="meta-pill"><Pin /> {store.dist}</span>
-        <span className="meta-pill solana">on Solana</span>
-      </div>
+        <div className="menu-section-head">
+          <h3 className="section-title">Menu</h3>
+          <span className="section-tag">{menu.length} items</span>
+        </div>
 
-      <div className="menu-section-head">
-        <h3 className="section-title">Menu</h3>
-        <span className="section-tag">{menu.length} items</span>
-      </div>
-
-      <ul className="menu-list">
-        {menu.map((it, i) => {
-          const q = qtyOf(it.name);
-          return (
-            <li key={it.name} className={`menu-row ${q > 0 ? 'has-qty' : ''}`}
-            style={{ animationDelay: `${i * 40}ms` }}>
-              <div className="menu-row-text">
-                <div className="menu-row-name">{it.name}</div>
-                <div className="menu-row-desc">{it.desc}</div>
-                <div className="menu-row-price">${it.price.toFixed(2)}</div>
-              </div>
-              <div className="menu-row-thumb-wrap">
+        <ul className="menu-list">
+          {menu.map((it, i) => {
+            const q = qtyOf(it.name);
+            return (
+              <li key={it.name} className={`menu-row ${q > 0 ? 'has-qty' : ''}`}
+              style={{ animationDelay: `${i * 40}ms` }}>
                 <div className="menu-row-thumb" style={{ background: store.swatch }}>
                   <span className="menu-row-emoji">{it.emoji}</span>
                 </div>
+                <div className="menu-row-text">
+                  <div className="menu-row-name">{it.name}</div>
+                  <div className="menu-row-desc">{it.desc}</div>
+                  <div className="menu-row-price">${it.price.toFixed(2)}</div>
+                </div>
                 {q === 0 ?
-                <button className="menu-plus" aria-label={`add ${it.name}`}
-                onClick={() => onAdd(it)}>+</button> :
+                <button className="menu-add" aria-label={`add ${it.name}`}
+                onClick={() => onAdd(it)}>
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 4v10M4 9h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
+                  </button> :
 
                 <div className="menu-stepper">
                     <button className="step-btn" aria-label="decrease"
@@ -1780,18 +1754,19 @@ function MenuScreen({ theme, store, category, menu, qtyOf, onAdd, onDec, cart, c
                   onClick={() => onAdd(it)}>+</button>
                   </div>
                 }
-              </div>
-            </li>);
+              </li>);
 
-        })}
-      </ul>
+          })}
+        </ul>
+      </div>
 
-      {/* sticky cart bar */}
+      {/* pinned cart bar — in normal flow at the bottom so it can never scroll
+          out of view (the old position:absolute drifted with the scroller) */}
       {cartCount > 0 &&
       <button className="cart-bar" onClick={onCheckout}>
           <span className="cart-bar-badge">{cartCount}</span>
           <span className="cart-bar-mid">
-            <span className="cart-bar-title">Checkout via Solayer Pay</span>
+            <span className="cart-bar-title">Review order</span>
             <span className="cart-bar-sub">{cart.length} {cart.length === 1 ? 'item' : 'items'} · ETA {store.eta}</span>
           </span>
           <span className="cart-bar-total">${cartTotal.toFixed(2)}</span>
@@ -1838,8 +1813,9 @@ function OrdersScreen({ theme, upcoming, past, onPick, onClose }) {
       <ul className="orders-list">
           {list.map((o) =>
         <li key={o.id} className="order-card">
-              <div className="order-thumb" style={{ background: o.swatch }}>
-                <span className="order-emoji">{o.emoji}</span>
+              <div className="order-thumb"
+            style={{ backgroundColor: o.swatch, backgroundImage: o.cat ? `url('images/cat-${o.cat}.png')` : 'none' }}>
+                {!o.cat && <span className="order-emoji">{o.emoji}</span>}
               </div>
               <div className="order-body">
                 <div className="order-top-row">

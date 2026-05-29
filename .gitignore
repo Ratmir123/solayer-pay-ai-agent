@@ -35,6 +35,9 @@ out/
 *.log
 logs/
 
+# /goal orchestrator artifacts (internal automation logs, not app code)
+.goal/
+
 # Claude Code local settings (keep personal, do not share)
 .claude/settings.local.json
 

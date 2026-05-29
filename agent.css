@@ -566,36 +566,11 @@
   padding: 4px 0 16px;
 }
 
-.browse-filterbar {
-  display: flex; gap: 8px;
-  padding: 4px 18px 12px;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.browse-filterbar::-webkit-scrollbar { display: none; }
-.filter-chip {
-  display: inline-flex; align-items: center;
-  height: 32px; padding: 0 14px;
-  border-radius: 999px;
-  font-size: 13px; font-weight: 500; letter-spacing: -0.005em;
-  color: var(--sub);
-  background: var(--chip);
-  border: 1px solid var(--chip-border);
-  flex-shrink: 0;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: background .15s ease, color .15s ease;
-}
-.filter-chip:hover { color: var(--ink); }
-.filter-chip.is-active {
-  background: var(--ink);
-  color: var(--primary-pill);
-  border-color: transparent;
-}
-.theme-lily .filter-chip.is-active { background: var(--ink); color: #fff; }
+/* (filter chips removed — they were non-functional and collapsed to a 16px
+   cramped bar; a single calm count row reads cleaner and more minimal) */
 
 .browse-count {
-  padding: 4px 18px 12px;
+  padding: 10px 18px 14px;
   display: flex; align-items: baseline; justify-content: space-between;
   font-size: 13px; color: var(--sub);
 }
@@ -626,23 +601,17 @@
   width: 100%; aspect-ratio: 16 / 10;
   border-radius: 18px;
   overflow: hidden;
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08), 0 10px 28px rgba(0,0,0,0.3);
+  background-size: cover; background-position: center;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08), 0 12px 30px rgba(0,0,0,0.34);
 }
-.browse-img-stripe {
+/* legibility wash — darken the bottom for the Solayer-Pay tag and the top a
+   touch for the heart, while keeping the photo bright in the middle */
+.browse-img-shade {
   position: absolute; inset: 0;
-  background-image: repeating-linear-gradient(
-    135deg,
-    rgba(255,255,255,0.05) 0 12px,
-    rgba(0,0,0,0.08) 12px 24px
-  );
-  mix-blend-mode: overlay;
+  background:
+    linear-gradient(to top, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0) 42%),
+    linear-gradient(to bottom, rgba(0,0,0,0.28) 0%, rgba(0,0,0,0) 28%);
   pointer-events: none;
-}
-.browse-img-emoji {
-  font-size: 78px; line-height: 1;
-  filter: drop-shadow(0 6px 14px rgba(0,0,0,0.45));
-  transform: rotate(-4deg);
 }
 .browse-img-tag {
   position: absolute; left: 12px; bottom: 12px;
@@ -707,7 +676,8 @@
   border-radius: 24px;
   padding: 18px;
   display: flex; flex-direction: column;
-  gap: 16px;
+  gap: 14px;
+  overflow: hidden;                 /* clip the bleeding hero to the card radius */
   backdrop-filter: blur(14px) saturate(150%);
   -webkit-backdrop-filter: blur(14px) saturate(150%);
   animation: cardIn .42s var(--ease-out) backwards;
@@ -716,14 +686,31 @@
   from { opacity: 0; transform: translateY(16px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.store-card-head { display: flex; gap: 14px; align-items: center; }
-.store-thumb {
-  width: 54px; height: 54px; border-radius: 14px;
-  flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.1), 0 4px 12px rgba(0,0,0,0.25);
+/* review-card photo header — bleeds to the card edges, store identity overlaid */
+.store-card-hero {
+  position: relative;
+  height: 134px;
+  margin: -18px -18px 2px;
+  border-radius: 23px 23px 0 0;
+  overflow: hidden;
+  background-size: cover; background-position: center;
+  display: flex; align-items: flex-end;
 }
-.store-emoji { font-size: 28px; line-height: 1; }
+.store-card-hero-shade {
+  position: absolute; inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.18) 58%, rgba(0,0,0,0) 100%);
+  pointer-events: none;
+}
+.store-card-hero-id {
+  position: relative; z-index: 2;
+  padding: 14px 16px;
+  display: flex; flex-direction: column; gap: 9px;
+}
+.store-card-hero-id .store-name {
+  color: #fff; font-size: 20px; font-weight: 700; letter-spacing: -0.02em;
+  text-shadow: 0 2px 14px rgba(0,0,0,0.55);
+}
+.store-card-hero-id .store-meta { margin-top: 0; }
 .store-id { min-width: 0; flex: 1; }
 .store-name {
   font-size: 17px; font-weight: 600; color: var(--ink);
@@ -760,76 +747,66 @@
 .store-price-val { font-size: 26px; font-weight: 600; color: var(--ink); letter-spacing: -0.02em; }
 .store-price-sub { font-size: 11px; color: var(--sub); margin-top: 2px; font-family: 'Geist Mono', monospace; }
 
-.store-actions { display: flex; flex-direction: column; gap: 6px; align-items: stretch; }
+/* ─── Face ID hold-to-pay (lives at the foot of Review order) ─── */
+/* registered so the conic ring fill can transition smoothly instead of stepping */
+@property --p { syntax: '<number>'; inherits: false; initial-value: 0; }
 
-/* ─── Pay screen ─── */
-.pay-screen { padding-top: 20px; padding-bottom: 0; }
-.pay-amount { text-align: center; padding: 8px 0 20px; }
-.pay-currency {
-  font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
-  font-family: 'Geist Mono', monospace;
-  color: var(--sub);
-  margin-bottom: 4px;
+.pay-confirm {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 12px;
+  padding: 8px 0 6px;
+  /* follows the card in — a beat later, gentle rise */
+  animation: bubbleIn .45s var(--ease-out) .14s backwards;
 }
-.pay-total {
-  font-size: 56px; font-weight: 600; letter-spacing: -0.03em;
-  color: var(--ink); line-height: 1; font-feature-settings: 'tnum';
-}
-.pay-sub { margin-top: 8px; font-size: 14px; color: var(--sub); }
-
-.pay-source {
-  background: var(--card);
-  border: 1px solid var(--card-border);
-  border-radius: 18px;
-  padding: 16px 18px;
-  display: flex; flex-direction: column; gap: 12px;
-}
-.pay-source-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.pay-source-id { display: flex; align-items: center; gap: 12px; }
-.pay-logo {
-  width: 36px; height: 36px; border-radius: 10px;
-  background: rgba(0,255,163,0.12);
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
-.pay-source-name { font-size: 15px; font-weight: 600; color: var(--ink); }
-.pay-source-bal { font-size: 11px; color: var(--sub); margin-top: 1px; font-family: 'Geist Mono', monospace; }
-.pay-net {
-  font-size: 10px; font-family: 'Geist Mono', monospace;
-  color: var(--accent); letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-.pay-source-row.total {
-  border-top: 1px solid var(--card-border);
-  padding-top: 12px;
-}
-.pay-source-lbl { font-size: 13px; color: var(--sub); }
-.pay-source-val { font-size: 14px; color: var(--ink); font-family: 'Geist Mono', monospace; }
-.pay-source-final { font-size: 16px; font-weight: 600; }
-
-.pay-biometric {
-  margin-top: auto; padding: 20px 0 12px;
+.pay-bio {
+  appearance: none; border: none; background: transparent; cursor: pointer;
   display: flex; flex-direction: column; align-items: center; gap: 14px;
+  font-family: inherit; padding: 6px 18px;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;          /* hold without triggering scroll / long-press menu */
+  user-select: none; -webkit-user-select: none;
 }
 .pay-bio-ring {
+  --p: 0;
+  position: relative;
   width: 96px; height: 96px; border-radius: 50%;
-  padding: 4px;
   display: flex; align-items: center; justify-content: center;
-  transition: background .1s linear;
+  background: conic-gradient(var(--primary-pill) calc(var(--p) * 360deg),
+                             color-mix(in srgb, var(--ink) 10%, transparent) 0);
+  transition: --p var(--dur, 1500ms) linear, box-shadow .4s var(--ease-out);
+}
+.pay-bio.is-holding .pay-bio-ring { --p: 1; }
+.pay-bio.is-done .pay-bio-ring {
+  --p: 1;
+  background: var(--primary-pill);
+  box-shadow: 0 0 0 7px color-mix(in srgb, var(--primary-pill) 22%, transparent),
+              0 10px 28px rgba(8,77,62,0.5);
 }
 .pay-bio-inner {
-  width: 88px; height: 88px; border-radius: 50%;
-  background: rgba(0,0,0,0.5);
+  width: 84px; height: 84px; border-radius: 50%;
+  background: #0c0e0f;
   display: flex; align-items: center; justify-content: center;
-  border: 1px solid rgba(255,255,255,0.06);
-  animation: bio-pulse 1.6s ease-in-out infinite;
+  border: 1px solid rgba(255,255,255,0.07);
+  animation: bioBreathe 2.4s ease-in-out infinite;
 }
-@keyframes bio-pulse {
-  0%, 100% { transform: scale(1); }
-  50%      { transform: scale(1.04); }
-}
+.theme-lily .pay-bio-inner { background: rgba(255,255,255,0.92); }
+.pay-bio.is-holding .pay-bio-inner,
+.pay-bio.is-done .pay-bio-inner { animation: none; }
+@keyframes bioBreathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.035); } }
+.pay-bio:active .pay-bio-inner { transform: scale(0.97); }
 .pay-bio-label {
-  font-size: 13px; color: var(--sub);
+  font-size: 13.5px; color: var(--sub);
+  font-family: 'Geist Mono', ui-monospace, monospace; letter-spacing: 0.02em;
+}
+.pay-bio-label b { color: var(--ink); font-weight: 600; }
+.pay-bio.is-done .pay-bio-label { color: var(--accent); }
+.pay-bio:focus-visible { outline: none; }
+.pay-bio:focus-visible .pay-bio-ring {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 55%, transparent);
+}
+.pay-bio-meta {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11px; color: var(--sub);
   font-family: 'Geist Mono', monospace; letter-spacing: 0.04em;
 }
 
@@ -1005,76 +982,72 @@
 }
 .speak-skip:hover { color: var(--ink); background: var(--chip); }
 
-/* ─── inline order card inside a frog chat bubble ─── */
+/* ─── inline order suggestion inside a frog chat bubble ─── */
 .frog-msg-stack {
-  display: flex; flex-direction: column; gap: 8px;
-  max-width: 78%;
+  display: flex; flex-direction: column; gap: 6px;
+  max-width: 84%;
 }
 .frog-msg-stack .bubble { max-width: 100%; }
 
-.inline-order-card {
+/* a light, image-led result tile — reads as part of the assistant's turn, not a
+   heavy standalone "ad-card". The food photo carries the richness, so the chrome
+   stays minimal (one hairline, no inset swatch, no double label). */
+.order-suggest {
   appearance: none; cursor: pointer;
-  display: flex; align-items: center; gap: 12px;
-  padding: 10px 12px 10px 10px;
-  background: var(--card);
-  border: 1px solid var(--card-border);
-  border-radius: 18px;
+  display: flex; align-items: center; gap: 11px;
+  padding: 7px 10px 7px 7px;
+  background: var(--bubble);
+  border: 1px solid color-mix(in srgb, var(--ink) 8%, transparent);
+  border-radius: 16px;
+  border-top-left-radius: 8px;            /* nests beneath the bubble's tail */
   color: var(--ink);
-  font-family: inherit;
-  text-align: left;
+  font-family: inherit; text-align: left;
   width: 100%;
-  transition: transform .12s ease, background .2s ease, border-color .2s ease;
-  animation: bubbleIn .35s var(--ease-out) backwards;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform .14s var(--ease-out), background .2s ease, border-color .2s ease;
+  /* the text bubble lands first, then this follows — a quiet stagger */
+  animation: bubbleIn .35s var(--ease-out) 110ms backwards;
 }
-.inline-order-card:hover {
-  border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+.order-suggest:hover {
   background: var(--surface-soft-hover);
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
 }
-.inline-order-card:active { transform: scale(0.98); }
-.inline-order-card:focus-visible {
+.order-suggest:active { transform: scale(0.985); }
+.order-suggest:focus-visible {
   outline: none;
   border-color: color-mix(in srgb, var(--accent) 70%, transparent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 50%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 42%, transparent);
 }
-/* let the text bubble land first, then the card follows — quiet stagger */
-.frog-msg-stack .inline-order-card { animation-delay: 120ms; }
-
-.ioc-emoji {
-  width: 40px; height: 40px; flex-shrink: 0;
-  border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 22px;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08), 0 4px 10px rgba(0,0,0,0.25);
+.os-thumb {
+  width: 46px; height: 46px; flex-shrink: 0;
+  border-radius: 11px;
+  background-size: cover; background-position: center;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
 }
-.ioc-body {
-  flex: 1; min-width: 0;
-  display: flex; flex-direction: column; gap: 2px; line-height: 1.2;
-}
-.ioc-store {
-  font-size: 14px; font-weight: 600; letter-spacing: -0.005em;
+.os-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; line-height: 1.25; }
+.os-store {
+  font-size: 14.5px; font-weight: 600; letter-spacing: -0.01em;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.ioc-meta {
-  font-size: 12px;
-  color: color-mix(in srgb, var(--ink) 72%, transparent);
-  font-family: 'Geist Mono', monospace; letter-spacing: 0.02em;
+.os-meta {
+  font-size: 12px; color: var(--sub);
+  font-family: 'Geist Mono', monospace; letter-spacing: 0.01em;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.ioc-cta {
-  display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
-  flex-shrink: 0;
-}
-.ioc-price {
+.os-cta { display: flex; align-items: center; gap: 9px; flex-shrink: 0; padding-right: 2px; }
+.os-price {
   font-size: 14px; font-weight: 600;
-  font-family: 'Geist Mono', monospace;
-  letter-spacing: -0.01em;
-  color: var(--accent);
+  font-family: 'Geist Mono', monospace; letter-spacing: -0.01em;
+  color: var(--ink);
 }
-.ioc-action {
-  font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
-  color: var(--sub);
-  font-family: 'Geist Mono', monospace;
+.os-go {
+  width: 26px; height: 26px; flex-shrink: 0;
+  border-radius: 999px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--primary-pill); color: var(--primary-pill-ink);
+  transition: transform .14s var(--ease-out);
 }
+.order-suggest:hover .os-go { transform: translateX(2px); }
 
 /* ─── composer (text + mic) on idle screen ─── */
 .composer {
@@ -1197,30 +1170,48 @@
   flex: 1 1 auto;
   display: flex; flex-direction: column;
   min-height: 0;
-  overflow-y: auto;
-  padding: 6px 0 100px;  /* bottom space for sticky cart bar */
+  overflow: hidden;            /* the inner .menu-scroll scrolls */
+}
+.menu-scroll {
+  flex: 1 1 auto; min-height: 0;
+  overflow-y: auto; overflow-x: hidden;
+  overscroll-behavior-y: contain;
+  padding: 6px 0 8px;
 }
 
 .menu-hero {
   position: relative;
-  margin: 0 18px 14px;
-  aspect-ratio: 16 / 8;
+  margin: 0 18px 16px;
+  height: 172px;
   border-radius: 20px;
   overflow: hidden;
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08), 0 10px 28px rgba(0,0,0,0.3);
+  background-size: cover; background-position: center;
+  display: flex; flex-direction: column; justify-content: flex-end;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08), 0 16px 34px rgba(0,0,0,0.42);
+  animation: cardIn .45s var(--ease-out) backwards;
 }
-.menu-hero-emoji {
-  font-size: 86px; line-height: 1;
-  transform: rotate(-3deg);
-  filter: drop-shadow(0 6px 14px rgba(0,0,0,0.5));
+.menu-hero-shade {
+  position: absolute; inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.2) 52%, rgba(0,0,0,0.05) 100%);
+  pointer-events: none;
 }
+.menu-hero-info {
+  position: relative; z-index: 2;
+  padding: 14px 16px;
+  display: flex; flex-direction: column; gap: 9px;
+}
+.menu-hero-name {
+  font-size: 23px; font-weight: 700; letter-spacing: -0.02em;
+  color: #fff; line-height: 1.08;
+  text-shadow: 0 2px 14px rgba(0,0,0,0.5);
+}
+.menu-hero-meta { display: flex; gap: 6px; flex-wrap: wrap; }
 .menu-hero-tag {
-  position: absolute; left: 14px; bottom: 14px;
+  position: absolute; top: 12px; right: 12px; z-index: 2;
   display: inline-flex; align-items: center; gap: 6px;
-  background: rgba(0,0,0,0.55);
+  background: rgba(0,0,0,0.5);
   border-radius: 999px;
-  padding: 6px 12px 6px 9px;
+  padding: 5px 11px 5px 8px;
   backdrop-filter: blur(8px) saturate(160%);
   -webkit-backdrop-filter: blur(8px) saturate(160%);
   font-family: 'Geist Mono', monospace;
@@ -1229,9 +1220,12 @@
 }
 .menu-hero-tag .dot { width: 6px; height: 6px; border-radius: 999px; }
 
-.menu-meta-strip {
-  display: flex; gap: 6px; flex-wrap: wrap;
-  padding: 0 18px 14px;
+/* translucent pills used over the hero photo */
+.meta-pill.ghost {
+  background: rgba(255,255,255,0.18);
+  color: #fff;
+  backdrop-filter: blur(6px) saturate(160%);
+  -webkit-backdrop-filter: blur(6px) saturate(160%);
 }
 .meta-pill.solana {
   background: rgba(0,255,163,0.12);
@@ -1247,97 +1241,106 @@
 
 .menu-list {
   list-style: none; margin: 0; padding: 0 18px;
-  display: flex; flex-direction: column; gap: 16px;
+  display: flex; flex-direction: column; gap: 2px;
 }
 .menu-row {
-  display: flex; align-items: flex-start; justify-content: space-between;
-  gap: 16px;
-  padding: 14px 0;
+  display: flex; align-items: center;
+  gap: 14px;
+  padding: 12px 0;
   border-bottom: 1px solid var(--card-border);
   animation: bubbleIn .4s var(--ease-out) backwards;
 }
 .menu-row:last-child { border-bottom: none; }
-.menu-row-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
-.menu-row-name {
-  font-size: 16px; font-weight: 600; color: var(--ink);
-  letter-spacing: -0.01em;
-}
-.menu-row-desc { font-size: 13px; color: var(--sub); line-height: 1.35; }
-.menu-row-price {
-  margin-top: 4px;
-  font-size: 14px; font-weight: 500; color: var(--ink);
-  font-family: 'Geist Mono', monospace; letter-spacing: -0.01em;
-}
 
-.menu-row-thumb-wrap {
-  position: relative;
-  width: 80px; height: 80px; flex-shrink: 0;
-}
 .menu-row-thumb {
-  width: 100%; height: 100%; border-radius: 14px;
-  overflow: hidden;
+  position: relative;
+  width: 60px; height: 60px; flex-shrink: 0;
+  border-radius: 14px; overflow: hidden;
   display: flex; align-items: center; justify-content: center;
   box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06), 0 6px 14px rgba(0,0,0,0.25);
-  position: relative;
 }
 .menu-row-thumb::after {
   content: ''; position: absolute; inset: 0;
   background-image: repeating-linear-gradient(135deg,
-    rgba(255,255,255,0.05) 0 10px, rgba(0,0,0,0.08) 10px 20px);
+    rgba(255,255,255,0.06) 0 10px, rgba(0,0,0,0.08) 10px 20px);
   mix-blend-mode: overlay;
 }
 .menu-row-emoji {
-  font-size: 36px; line-height: 1;
+  font-size: 30px; line-height: 1;
   filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));
   transform: rotate(-4deg); position: relative; z-index: 2;
 }
-.menu-plus {
-  position: absolute; right: -6px; bottom: -6px;
-  appearance: none; border: none; cursor: pointer;
-  width: 32px; height: 32px; border-radius: 999px;
-  background: #fff; color: #0a0a0a;
-  font-size: 22px; font-weight: 500; line-height: 1;
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.35), 0 0 0 3px var(--card);
-  transition: transform .12s ease;
+
+.menu-row-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.menu-row-name {
+  font-size: 15.5px; font-weight: 600; color: var(--ink);
+  letter-spacing: -0.01em;
 }
-.menu-plus:hover { transform: scale(1.08); }
-.menu-plus:active { transform: scale(0.92); }
+.menu-row-desc {
+  font-size: 12.5px; color: var(--sub); line-height: 1.35;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.menu-row-price {
+  margin-top: 2px;
+  font-size: 13.5px; font-weight: 600; color: var(--ink);
+  font-family: 'Geist Mono', monospace; letter-spacing: -0.01em;
+}
+
+/* add / stepper sit on the RIGHT as a clear, distinct control — the old
+   versions were tiny chips overlapping the thumb corner and were easy to miss */
+.menu-add {
+  flex-shrink: 0;
+  appearance: none; border: 1px solid var(--card-border); cursor: pointer;
+  width: 40px; height: 40px; border-radius: 999px;
+  background: var(--surface-soft); color: var(--ink);
+  display: flex; align-items: center; justify-content: center;
+  transition: transform .12s var(--ease-out), background .18s ease, border-color .18s ease, color .18s ease;
+}
+.menu-add:hover { background: var(--primary-pill); color: var(--primary-pill-ink); border-color: transparent; }
+.menu-add:active { transform: scale(0.9); }
 
 .menu-stepper {
-  position: absolute; right: -10px; bottom: -8px;
-  display: flex; align-items: center; gap: 4px;
-  background: #fff; color: #0a0a0a;
+  flex-shrink: 0;
+  display: flex; align-items: center; gap: 2px;
+  background: var(--surface-soft);
+  border: 1px solid var(--card-border);
   border-radius: 999px;
-  padding: 4px;
-  box-shadow: 0 6px 16px rgba(0,0,0,0.35), 0 0 0 3px var(--card);
+  padding: 3px;
+  animation: stepperIn .22s var(--ease-out) backwards;
+}
+@keyframes stepperIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to   { opacity: 1; transform: scale(1); }
 }
 .step-btn {
   appearance: none; border: none; cursor: pointer;
-  width: 26px; height: 26px; border-radius: 999px;
-  background: transparent; color: #0a0a0a;
+  width: 32px; height: 32px; border-radius: 999px;
+  background: transparent; color: var(--ink);
   font-size: 18px; font-weight: 500;
   display: flex; align-items: center; justify-content: center;
-  transition: background .15s ease;
+  transition: background .15s ease, transform .1s ease;
 }
-.step-btn:hover { background: rgba(0,0,0,0.06); }
+.step-btn:hover { background: var(--surface-soft-hover); }
+.step-btn:active { transform: scale(0.9); }
 .step-qty {
-  min-width: 20px;
-  text-align: center;
-  font-size: 14px; font-weight: 600;
+  min-width: 22px; text-align: center;
+  font-size: 14px; font-weight: 600; color: var(--ink);
   font-family: 'Geist Mono', monospace;
 }
 
-/* sticky cart bar inside iOS frame (anchors to bottom of viewport area) */
+/* pinned cart bar — a non-scrolling flex child at the bottom of .menu-area, so
+   it's always visible above the tab bar (was position:absolute, which scrolled
+   away with the menu content) */
 .cart-bar {
-  position: absolute; left: 16px; right: 16px; bottom: 38px;
+  flex-shrink: 0;
+  margin: 8px 16px 14px;
   display: flex; align-items: center; gap: 14px;
   appearance: none; border: none; cursor: pointer;
   background: var(--primary-pill);
   color: var(--primary-pill-ink);
   border-radius: 999px;
   padding: 10px 16px 10px 12px;
-  box-shadow: 0 12px 32px rgba(8,77,62,0.55), 0 0 0 0.5px rgba(255,255,255,0.1);
+  box-shadow: 0 14px 32px rgba(8,77,62,0.5), 0 0 0 0.5px rgba(255,255,255,0.1);
   font-family: inherit;
   z-index: 50;
   animation: cartBarIn .35s var(--ease-out) backwards;
@@ -1372,7 +1375,12 @@
 }
 
 /* ─── Cart lines in confirming view ─── */
-.confirm-pad { padding-top: 4px; }
+/* center the [card · Face ID] group: card pushes down from the top, the pay
+   control pushes up from the bottom, so the pair sits balanced — and when the
+   cart is long the auto margins collapse and it just scrolls. */
+.confirm-pad { padding-top: 6px; gap: 18px; }
+.confirm-pad .store-card { margin-top: auto; }
+.confirm-pad .pay-confirm { margin-bottom: auto; }
 .cart-lines { list-style: none; margin: 0; padding: 0; }
 .cart-line {
   display: flex; align-items: center; gap: 10px;
@@ -1483,25 +1491,20 @@
   display: flex; flex-direction: column; gap: 12px;
 }
 .order-card {
-  display: flex; gap: 14px; align-items: stretch;
+  display: flex; gap: 14px; align-items: center;
   background: var(--card);
   border: 1px solid var(--card-border);
-  border-radius: 16px;
+  border-radius: 18px;
   padding: 12px;
-  animation: bubbleIn .35s var(--ease-out) backwards;
+  animation: bubbleIn .4s var(--ease-out) backwards;
 }
 .order-thumb {
-  width: 56px; height: 56px; border-radius: 12px;
-  flex-shrink: 0;
+  width: 62px; height: 62px; border-radius: 14px;
+  flex-shrink: 0; align-self: flex-start;
   display: flex; align-items: center; justify-content: center;
   box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
-  position: relative;
-}
-.order-thumb::after {
-  content: ''; position: absolute; inset: 0; border-radius: 12px;
-  background-image: repeating-linear-gradient(135deg,
-    rgba(255,255,255,0.06) 0 8px, rgba(0,0,0,0.08) 8px 16px);
-  mix-blend-mode: overlay;
+  background-size: cover; background-position: center;
+  overflow: hidden;
 }
 .order-emoji { font-size: 28px; line-height: 1; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4)); }
 .order-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
@@ -1637,9 +1640,7 @@
   font-family: 'Geist', sans-serif;
 }
 
-/* keep cart-bar above the new tab pill */
-.cart-bar { bottom: 100px; }
-.menu-area { padding-bottom: 100px; }
+/* (cart-bar is now an in-flow pinned footer — no absolute offset needed) */
 
 /* ─── Recording indicator pill (above send FAB) ─── */
 .rec-indicator {
@@ -2417,19 +2418,34 @@
 /* slow auto-drift dish carousel — also swipeable; soft side masks, inset from
    the phone edges. Drift + pause-on-touch handled in the DishCarousel component. */
 .dish-carousel {
+  position: relative;
+  padding: 8px 0;
+  overflow: hidden;
+  /* soft fade at both edges so chips drift in/out instead of cutting hard */
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 44px, #000 calc(100% - 44px), transparent 100%);
+          mask-image: linear-gradient(to right, transparent 0, #000 44px, #000 calc(100% - 44px), transparent 100%);
+}
+/* the moving track — translate3d here is GPU-composited + sub-pixel accurate,
+   so the drift is perfectly smooth where scrollLeft used to stutter. */
+.dish-track {
   display: flex; align-items: center;
   gap: 8px;
-  padding: 8px 26px;
+  width: max-content;
+  padding: 0 26px;
+  will-change: transform;
+  transform: translate3d(0,0,0);
+}
+/* drifting chips must not snap or stagger-animate */
+.dish-carousel .quick-chip { scroll-snap-align: none; animation: none; }
+/* reduced-motion: no drift — a normal, freely-swipeable single row */
+.dish-carousel.is-static {
   overflow-x: auto; overflow-y: hidden;
   overscroll-behavior-x: contain;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
-  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 42px, #000 calc(100% - 42px), transparent 100%);
-          mask-image: linear-gradient(to right, transparent 0, #000 42px, #000 calc(100% - 42px), transparent 100%);
 }
-.dish-carousel::-webkit-scrollbar { display: none; }
-/* drifting chips must not snap or stagger-animate */
-.dish-carousel .quick-chip { scroll-snap-align: none; animation: none; }
+.dish-carousel.is-static::-webkit-scrollbar { display: none; }
+.dish-carousel.is-static .dish-track { width: auto; }
 
 /* compact horizontal-scroll category chips */
 .quick-chips {
@@ -2462,34 +2478,34 @@
 }
 .quick-chips::-webkit-scrollbar { display: none; }
 
-/* secondary "Order something else" treatment — quieter, with a hairline */
+/* secondary "Order something else" chip strip — quiet, no divider; it just
+   breathes below the thread so it reads as part of the conversation. */
 .quick-chips-quiet {
-  padding-top: 12px;
+  padding-top: 6px;
   padding-bottom: 4px;
-  margin-top: 8px;
-  border-top: 1px solid color-mix(in srgb, var(--chip-border) 70%, transparent);
+  margin-top: 6px;
 }
 
-/* single quiet affordance in conversation state — one small text pill that
-   reveals the full chip strip on tap. avoids re-stating the 8 emoji circles
-   beneath every conversational turn. */
+/* single quiet affordance in conversation state — a soft suggested-action chip
+   (left-aligned, like a quick reply) that reveals the full strip on tap. No
+   top border, so it sits inside the chat instead of being fenced off from it. */
 .quick-chips-more-row {
-  padding: 10px 18px 4px;
-  margin-top: 4px;
-  border-top: 1px solid color-mix(in srgb, var(--chip-border) 70%, transparent);
+  padding: 12px 18px 4px;
+  margin-top: 2px;
+  display: flex;
 }
 .quick-chip-add {
   appearance: none;
   cursor: pointer;
-  display: inline-flex; align-items: center; gap: 6px;
-  min-height: 36px;
-  padding: 0 14px;
+  display: inline-flex; align-items: center; gap: 7px;
+  min-height: 38px;
+  padding: 0 15px;
   border-radius: 999px;
-  background: transparent;
-  border: 1px dashed color-mix(in srgb, var(--ink) 22%, transparent);
-  color: color-mix(in srgb, var(--ink) 72%, transparent);
+  background: var(--surface-soft);
+  border: 1px solid var(--chip-border);
+  color: color-mix(in srgb, var(--ink) 76%, transparent);
   font-family: inherit;
-  font-size: 13px; font-weight: 500;
+  font-size: 13.5px; font-weight: 500;
   letter-spacing: -0.005em;
   line-height: 1;
   transition:
@@ -2499,11 +2515,17 @@
     transform .14s var(--ease-out);
   -webkit-tap-highlight-color: transparent;
 }
+.quick-chip-add > span:first-child {
+  font-size: 16px; line-height: 0;
+  color: var(--accent);
+  transition: transform .2s var(--ease-out);
+}
 .quick-chip-add:hover {
   color: var(--ink);
-  background: var(--surface-soft);
-  border-color: color-mix(in srgb, var(--accent) 50%, var(--chip-border));
+  background: var(--surface-soft-hover);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--chip-border));
 }
+.quick-chip-add:hover > span:first-child { transform: rotate(90deg); }
 .quick-chip-add:active { transform: scale(0.97); }
 .quick-chip-add:focus-visible {
   outline: none;
@@ -2581,7 +2603,7 @@
 @media (prefers-reduced-motion: reduce) {
   .greet-hero,
   .quick-chip,
-  .frog-msg-stack .inline-order-card {
+  .order-suggest {
     animation-duration: .2s;
     animation-delay: 0s;
     animation-name: greetFadeOnly;
@@ -2600,4 +2622,19 @@
 @keyframes greetFadeOnly {
   from { opacity: 0; }
   to   { opacity: 1; }
+}
+
+/* reduced-motion coverage for the redesigned AI-order screens: keep a calm fade
+   for orientation, drop perpetual motion and transform-based entrances/presses */
+@media (prefers-reduced-motion: reduce) {
+  .pay-bio-inner { animation: none !important; }
+  .menu-stepper,
+  .store-card, .browse-card, .order-card, .menu-row, .menu-hero, .cart-bar, .pay-confirm {
+    animation-duration: .22s !important;
+    animation-delay: 0s !important;
+    animation-name: greetFadeOnly !important;
+  }
+  .order-suggest:hover .os-go,
+  .quick-chip-add:hover > span:first-child { transform: none; }
+  .menu-add:active, .step-btn:active, .pay-bio:active .pay-bio-inner { transform: none; }
 }
