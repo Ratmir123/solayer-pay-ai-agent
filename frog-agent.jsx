@@ -228,19 +228,35 @@ const SEED_PAST_ORDERS = [
 // ─────────────────────────────────────────────────────────────
 // useMic — getUserMedia + AnalyserNode RMS → CSS var
 // ─────────────────────────────────────────────────────────────
-function useMic(active, levelRef, hostRef) {
+function useMic(active, levelRef, hostRef, recRef) {
   useEffect(() => {
     if (!active) {
       if (hostRef.current) hostRef.current.style.setProperty('--vol', '0');
       levelRef.current = 0;
       return;
     }
-    let audioCtx,analyser,raf,stream,alive = true;
+    let audioCtx,analyser,raf,stream,rec,alive = true;
+    let chunks = [];
     let smoothed = 0;
     const start = async () => {
       try {
         stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         if (!alive) {stream.getTracks().forEach((t) => t.stop());return;}
+        // record the same stream so Whisper can produce the final transcript
+        if (recRef && window.MediaRecorder) {
+          try {
+            const mime = pickRecMime();
+            rec = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+            rec.ondataavailable = (e) => {if (e.data && e.data.size) chunks.push(e.data);};
+            rec.start();
+            recRef.current = { stop: () => new Promise((resolve) => {
+              const make = () => new Blob(chunks, { type: rec && rec.mimeType || 'audio/webm' });
+              if (!rec || rec.state === 'inactive') {resolve(make());return;}
+              rec.onstop = () => resolve(make());
+              try {rec.stop();} catch (e) {resolve(make());}
+            }) };
+          } catch (e) {console.warn('recorder unavailable', e?.name || e);if (recRef) recRef.current = null;}
+        }
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const source = audioCtx.createMediaStreamSource(stream);
         analyser = audioCtx.createAnalyser();
@@ -273,6 +289,8 @@ function useMic(active, levelRef, hostRef) {
     return () => {
       alive = false;
       cancelAnimationFrame(raf);
+      try {if (rec && rec.state !== 'inactive') rec.stop();} catch (e) {}
+      if (recRef) recRef.current = null;
       if (stream) stream.getTracks().forEach((t) => t.stop());
       if (audioCtx) audioCtx.close().catch(() => {});
       if (hostRef.current) hostRef.current.style.setProperty('--vol', '0');
@@ -288,6 +306,24 @@ function showMicHint(msg) {
   el.classList.add('on');
   clearTimeout(showMicHint._t);
   showMicHint._t = setTimeout(() => el.classList.remove('on'), 2600);
+}
+
+// ── OpenAI Whisper STT via the local serve.py proxy (the key stays server-side,
+//    never in the browser). We POST the recorded audio blob and get back text. ──
+function pickRecMime() {
+  if (!window.MediaRecorder) return '';
+  const types = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4'];
+  for (const t of types) {try {if (MediaRecorder.isTypeSupported(t)) return t;} catch (e) {}}
+  return '';
+}
+async function transcribeWhisper(blob) {
+  const res = await fetch('/api/transcribe', {
+    method: 'POST',
+    headers: { 'Content-Type': blob.type || 'audio/webm' },
+    body: blob });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.detail || data.error || ('HTTP ' + res.status));
+  return (data.text || '').trim();
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -466,7 +502,8 @@ function CheckGlyph({ size = 28, color = '#fff' }) {
     </svg>);
 
 }
-function FrogAvatarSmall({ id = 'frog-avatar-sm', size = 36 }) {
+function FrogAvatarSmall({ id = 'frog-avatar-sm', size = 36, animated = false }) {
+  if (animated) return <AnimatedFrogAvatar id={id} size={size} />;
   return (
     <img
       id={id}
@@ -480,6 +517,86 @@ function FrogAvatarSmall({ id = 'frog-avatar-sm', size = 36 }) {
         imageRendering: 'auto'
       }} />);
 
+}
+
+// The header avatar replays a looped clip every 5s, CYCLING through blink →
+// bubble-gum → glitch. The blink plays in place; bubble and glitch live on
+// larger, centred layers (their source canvas was widened so effects can spill
+// past the avatar box). The in-place frog is hidden while bubble/glitch play, so
+// only one frog is ever on screen — no doubling. Frame 0 of every clip === the
+// resting frog, so swapping layers is seamless.
+const FROG_ANIM_SEQUENCE = ['blink', 'bubble', 'glitch'];
+function AnimatedFrogAvatar({ id, size }) {
+  const [anim, setAnim] = useState(null); // null | 'blink' | 'bubble' | 'glitch'
+  const iRef = useRef(0);
+  useEffect(() => {
+    const t = setInterval(() => {
+      setAnim(FROG_ANIM_SEQUENCE[iRef.current % FROG_ANIM_SEQUENCE.length]);
+      iRef.current += 1;
+    }, 5000);
+    return () => clearInterval(t);
+  }, []);
+  const rest = () => setAnim(null);
+  const hideBase = anim === 'bubble' || anim === 'glitch';
+  return (
+    <span className="mascot-avatar"
+      style={{ '--mascot-size': `${size}px`, width: `${size}px`, height: `${size}px` }}>
+      <span
+        id={id}
+        className={`mascot-blink${anim === 'blink' ? ' playing' : ''}${hideBase ? ' hidden' : ''}`}
+        onAnimationEnd={rest}
+        role="img"
+        aria-label="Solayer mascot" />
+      <span
+        className={`mascot-bubble${anim === 'bubble' ? ' playing' : ''}`}
+        onAnimationEnd={rest}
+        aria-hidden="true" />
+      <span
+        className={`mascot-glitch${anim === 'glitch' ? ' playing' : ''}`}
+        onAnimationEnd={rest}
+        aria-hidden="true" />
+    </span>);
+
+}
+
+// Single-line dictation transcript: words stream in left→right; once the line
+// fills the viewport it glides left (CSS transform transition retargets smoothly
+// as it grows) and older words dissolve under a left-edge mask. No wrapping, so
+// nothing below ever shifts.
+function VoiceTranscript({ transcript }) {
+  const viewRef = useRef(null);
+  const streamRef = useRef(null);
+  useEffect(() => {
+    const view = viewRef.current, stream = streamRef.current;
+    if (!view) return;
+    if (!stream) { view.classList.remove('is-scrolling'); return; }
+    const viewW = view.clientWidth, streamW = stream.scrollWidth;
+    const overflow = streamW - viewW;
+    if (overflow > 0) {
+      stream.style.transform = `translateX(${-overflow}px)`;   // pin the end to the right edge
+      view.classList.add('is-scrolling');                       // turn on the left fade
+    } else {
+      stream.style.transform = `translateX(${(viewW - streamW) / 2}px)`; // centred while it fits
+      view.classList.remove('is-scrolling');
+    }
+  }, [transcript]);
+
+  if (!transcript) {
+    return (
+      <div className="voice-transcript" ref={viewRef}>
+        <span className="vt-hint">say what you'd like to order…</span>
+      </div>);
+  }
+  const words = transcript.split(/\s+/).filter(Boolean);
+  return (
+    <div className="voice-transcript" ref={viewRef}>
+      <span className="vt-stream" ref={streamRef}>
+        {words.map((w, i) =>
+        <React.Fragment key={i}><span className="vt-word">{w}</span>{' '}</React.Fragment>
+        )}
+        <span className="vt-caret" aria-hidden="true">|</span>
+      </span>
+    </div>);
 
 }
 
@@ -509,9 +626,10 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
   }));
   const hostRef = useRef(null);
   const levelRef = useRef(0);
+  const recCtrlRef = useRef(null); // { stop: () => Promise<Blob> } while recording
 
   const listening = phase === 'listening';
-  useMic(listening, levelRef, hostRef);
+  useMic(listening, levelRef, hostRef, recCtrlRef);
   useTranscript(listening, setTranscript);
 
   // recording timer
@@ -567,29 +685,47 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
   const startListen = useCallback(() => {
     setTranscript('');setIntent(null);setStoreIdx(0);setCart([]);setPhase('listening');
   }, []);
-  const stopAndProcess = useCallback(() => {
-    const text = transcript.trim();
-    // empty → just slide over to chat without adding a message
-    if (!text) {setPhase('idle');setTranscript('');return;}
+  const buildOrderFrom = useCallback((text) => {
+    const cat = detectIntent(text) || 'pizza';
+    const s = STORES[cat][0];
+    const emoji = CATEGORIES.find((c) => c.key === cat)?.emoji;
+    const item = { name: s.item, desc: 'featured order', price: s.price, emoji, qty: 1 };
+    setIntent(cat);setStoreIdx(0);setCart([item]);
+    const id = Date.now();
+    setMessages((prev) => [
+    ...prev,
+    { id: `m-${id}-u`, from: 'user', text },
+    { id: `m-${id}-f`, from: 'frog',
+      text: `Found ${s.name} nearby — ${s.item.toLowerCase()} for $${s.price.toFixed(2)}, ready in ${s.eta}.`,
+      card: { kind: 'order', cat, store: s, item } }]
+    );
+    setTranscript('');
+    setPhase('idle');
+  }, []);
+  const stopAndProcess = useCallback(async () => {
+    const liveText = transcript.trim();
+    // grab the recording while we're still "listening" (before useMic cleanup)
+    let blob = null;
+    const ctrl = recCtrlRef.current;
+    if (ctrl && ctrl.stop) {try {blob = await ctrl.stop();} catch (e) {}}
+    // nothing said and nothing recorded → just slide to chat, no message
+    if (!liveText && !(blob && blob.size > 1200)) {setPhase('idle');setTranscript('');return;}
     setPhase('thinking');
-    setTimeout(() => {
-      const cat = detectIntent(text) || 'pizza';
-      const s = STORES[cat][0];
-      const emoji = CATEGORIES.find((c) => c.key === cat)?.emoji;
-      const item = { name: s.item, desc: 'featured order', price: s.price, emoji, qty: 1 };
-      setIntent(cat);setStoreIdx(0);setCart([item]);
-      const id = Date.now();
-      setMessages((prev) => [
-      ...prev,
-      { id: `m-${id}-u`, from: 'user', text },
-      { id: `m-${id}-f`, from: 'frog',
-        text: `Found ${s.name} nearby — ${s.item.toLowerCase()} for $${s.price.toFixed(2)}, ready in ${s.eta}.`,
-        card: { kind: 'order', cat, store: s, item } }]
-      );
-      setTranscript('');
-      setPhase('idle');
-    }, 1500);
-  }, [transcript]);
+    // OpenAI Whisper is the source of truth; fall back to the live transcript
+    let text = liveText;
+    if (blob && blob.size > 1200) {
+      try {
+        const whisper = await transcribeWhisper(blob);
+        if (whisper) text = whisper;
+      } catch (e) {
+        console.warn('Whisper failed, using live transcript:', e?.message || e);
+        if (!text) showMicHint('voice transcription unavailable');
+      }
+    }
+    text = (text || '').trim();
+    if (!text) {setPhase('idle');setTranscript('');return;}
+    buildOrderFrom(text);
+  }, [transcript, buildOrderFrom]);
   const pickChip = useCallback((cat) => {
     setTranscript(`I want ${cat}`);setIntent(cat);setStoreIdx(0);
     setPhase('searching');
@@ -731,7 +867,7 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
 
         <div className="header-id">
             <div className="avatar-wrap">
-              <FrogAvatarSmall id="frog-header" size={52} />
+              <FrogAvatarSmall id="frog-header" size={52} animated />
             </div>
             <div className="header-text">
               <div className="header-title">{h.name}</div>
@@ -781,7 +917,6 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
           <div className="chat-thread">
             {messages.length === 0 ?
           <div className="msg msg-frog">
-                <FrogAvatarSmall id="frog-msg-1" size={36} />
                 <div className="bubble bubble-frog">
                   <span>Hey!</span> <span className="wave-emoji">👋</span>{' '}
                   <span>Pick a category or tap the mic and tell me what you're craving.</span>
@@ -795,7 +930,6 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
                   </div> :
 
           <div key={m.id} className="msg msg-frog">
-                    <FrogAvatarSmall id={`frog-${m.id}`} size={36} />
                     <div className="frog-msg-stack">
                       <div className="bubble bubble-frog">{m.text}</div>
                       {m.card?.kind === 'order' &&
@@ -853,12 +987,7 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
 
           {phase === 'listening' &&
         <div className="voice-stage-text">
-              <div className="voice-transcript">
-                {transcript ?
-              <span>{transcript}<span className="vt-caret" aria-hidden="true">|</span></span> :
-              <span className="vt-hint">say what you'd like to order…</span>
-              }
-              </div>
+              <VoiceTranscript transcript={transcript} />
               <div className="voice-meta">
                 <span className="voice-dot" aria-hidden="true" />
                 <span className="voice-label">Listening</span>
@@ -1020,26 +1149,6 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
               aria-label="cancel">
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                 <path d="M5 5l8 8M13 5l-8 8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
-              </svg>
-            </button>
-            <button className="vc-stop" onClick={stopAndProcess}
-              aria-label={transcript ? 'send' : 'stop recording'}>
-              <span className="vc-stop-core">
-                {transcript ?
-              <svg width="28" height="28" viewBox="0 0 22 22" fill="none">
-                    <path d="M11 17V5M11 5l-5 5M11 5l5 5" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg> :
-              <svg width="30" height="30" viewBox="0 0 22 22" fill="none">
-                    <rect x="5.5" y="5.5" width="11" height="11" rx="3" fill="currentColor" />
-                  </svg>
-              }
-              </span>
-            </button>
-            <button className="vc-side" onClick={() => {setTranscript('');setPhase('idle');}}
-              aria-label="type instead" title="type instead">
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <rect x="2.5" y="4.5" width="13" height="9" rx="2" stroke="currentColor" strokeWidth="1.4"/>
-                <path d="M5 8.5h.6M7.2 8.5h.6M9.4 8.5h.6M11.6 8.5h.6M5 11h8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
               </svg>
             </button>
           </div>
@@ -1225,8 +1334,8 @@ window.THEMES = THEMES;
 // ─────────────────────────────────────────────────────────────
 function BottomTabs({ active, onNav, ordersCount, accent }) {
   const TABS = [
-  { key: 'ai', label: 'AI Order' },
   { key: 'card', label: 'Card' },
+  { key: 'ai', label: 'AI Order' },
   { key: 'account', label: 'Account' }];
 
   return (
@@ -1239,9 +1348,7 @@ function BottomTabs({ active, onNav, ordersCount, accent }) {
           onClick={() => onNav(t.key)}
           aria-label={t.label}>
               {t.key === 'ai' &&
-            <span className="tab-frog">
-                  <img src="mascot.png" alt="" className="tab-frog-img" />
-                </span>
+            <span className="tab-emerald" aria-hidden="true" />
             }
               {t.key === 'card' &&
             <span className="tab-line-icon" aria-hidden="true">
