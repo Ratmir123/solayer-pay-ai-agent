@@ -23,6 +23,7 @@
      SF Pro is reserved for iOS chrome / large titles. */
   font-family: 'Satoshi', 'Geist', -apple-system, system-ui, sans-serif;
   --vol: 0; --intensity: 1;
+  --dock-h: calc(112px + env(safe-area-inset-bottom, 0px)); /* tab-bar dock height — content clears it so it can scroll under the fade */
   --vlive: calc(var(--vol) * var(--intensity));
 
   /* spacing scale from Figma file: 0/4/6/12/16/20/24/32/40/160 */
@@ -594,7 +595,7 @@
   flex: 1 1 auto;
   display: flex; flex-direction: column;
   min-height: 0; overflow-y: auto;
-  padding: 4px 0 16px;
+  padding: 4px 0 var(--dock-h);
 }
 
 /* (filter chips removed — they were non-functional and collapsed to a 16px
@@ -905,6 +906,7 @@
    composer pill and the tab-bar pill share identical left/right edges */
 .agent-footer {
   position: relative; z-index: 20;
+  margin-bottom: var(--dock-h);
   padding: 12px 14px 14px;
   display: flex; align-items: center; justify-content: center;
 }
@@ -1397,7 +1399,7 @@
    away with the menu content) */
 .cart-bar {
   flex-shrink: 0;
-  margin: 8px 16px 14px;
+  margin: 8px 16px var(--dock-h);
   display: flex; align-items: center; gap: 14px;
   appearance: none; border: none; cursor: pointer;
   background: var(--primary-pill);
@@ -1513,7 +1515,7 @@
   display: flex; flex-direction: column;
   min-height: 0;
   overflow-y: auto;
-  padding: 4px 0 24px;
+  padding: 4px 0 var(--dock-h);
 }
 
 .orders-tabs {
@@ -1626,95 +1628,390 @@
 .orders-empty-title { font-size: 17px; font-weight: 600; color: var(--ink); letter-spacing: -0.01em; }
 .orders-empty-sub { font-size: 13px; color: var(--sub); }
 
-/* ─── BOTTOM TABS (persistent pill nav, matches figma) ─── */
-.bottom-tabs {
-  position: relative; z-index: 40;
-  margin: 8px 14px 28px;
-  display: flex; align-items: stretch;
-  padding: 6px;
-  gap: 2px;
-  background: #0b0b0d;
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 36px;
+/* ─────────────────────────────────────────────────────────────
+   ORDERS v2 — a live delivery tracker for active orders + a
+   refined, re-orderable history. The "upcoming" tab is no longer
+   a flat list: each live order is a hero card with a 4-step
+   progress tracker and a prominent ETA. The "past" tab gains a
+   quiet ledger total and a one-tap "order again" affordance.
+   ───────────────────────────────────────────────────────────── */
+
+/* empty state — soft glass orb instead of a bare oversized emoji */
+.orders-empty-orb {
+  width: 84px; height: 84px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  margin-bottom: 6px;
+  background:
+    radial-gradient(circle at 50% 34%, color-mix(in srgb, var(--accent) 26%, transparent), transparent 70%),
+    var(--surface-soft);
+  box-shadow: inset 0 0 0 1px var(--card-border);
+}
+.orders-empty-orb .orders-empty-emoji {
+  font-size: 38px; margin: 0; opacity: 0.92;
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.35));
+}
+
+/* history ledger total — a quiet receipt-style line above the list */
+.orders-history { display: flex; flex-direction: column; min-height: 0; }
+.orders-summary {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 12px;
+  margin: 0 18px 12px; padding: 0 2px 12px;
+  border-bottom: 1px solid var(--card-border);
+}
+.orders-summary-label { font-size: 12px; color: var(--sub); letter-spacing: -0.005em; }
+.orders-summary-total {
+  font-size: 14px; font-weight: 600; color: var(--ink);
+  font-family: 'Geist Mono', monospace;
+}
+.orders-summary-total .dim { color: var(--sub); font-size: 11px; font-weight: 500; }
+
+/* delivered status with a check — calmer "complete" read than the live dot */
+.order-status-done {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; font-family: 'Geist Mono', monospace;
+  letter-spacing: 0.02em; text-transform: uppercase;
+  color: var(--sub);
+}
+.order-status-done svg { color: var(--accent); flex-shrink: 0; }
+
+/* one-tap re-order — the whole point of a history, so it's first-class */
+.order-reorder {
+  box-sizing: border-box;
+  flex-shrink: 0; align-self: center;
+  width: 40px; height: 40px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  background: var(--surface-soft);
+  border: 1px solid var(--card-border);
+  color: var(--sub);
+  cursor: pointer;
+  transition:
+    color .2s var(--ease-soft),
+    background .2s var(--ease-soft),
+    border-color .2s var(--ease-soft),
+    transform .26s var(--ease-out);
+  -webkit-tap-highlight-color: transparent;
+}
+.order-reorder:hover {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface-soft));
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--card-border));
+  transform: rotate(-38deg);
+}
+.order-reorder:active { transform: rotate(-38deg) scale(0.92); }
+.order-reorder:focus-visible {
+  outline: none;
+  border-color: color-mix(in srgb, var(--accent) 70%, var(--card-border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+/* ── LIVE ORDER CARD — the hero of the screen ── */
+.orders-live-list { padding-top: 2px; }
+.order-live {
+  position: relative;
+  flex-direction: column; align-items: stretch; gap: 0;
+  padding: 0; overflow: hidden;
+  background:
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--accent) 9%, var(--card)) 0%,
+      var(--card) 58%);
+  border-color: color-mix(in srgb, var(--accent) 26%, var(--card-border));
   box-shadow:
-    0 1px 0 rgba(255,255,255,0.04) inset,
-    0 10px 28px rgba(0,0,0,0.45);
+    0 1px 0 rgba(255,255,255,0.05) inset,
+    0 14px 34px -16px color-mix(in srgb, var(--accent) 34%, transparent);
+}
+.order-live-glow {
+  position: absolute; top: -46%; left: 50%; transform: translateX(-50%);
+  width: 72%; height: 130px;
+  background: radial-gradient(60% 100% at 50% 0%, color-mix(in srgb, var(--accent) 26%, transparent), transparent 72%);
+  pointer-events: none;
+}
+.order-live-head {
+  position: relative;
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 14px 14px 13px;
+}
+.order-thumb-lg { width: 66px; height: 66px; border-radius: 16px; }
+.order-live-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; padding-top: 1px; }
+.order-live-info .order-name { font-size: 16px; }
+.order-live-info .order-price { margin-top: 4px; }
+
+.order-eta {
+  flex-shrink: 0; align-self: flex-start;
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 12px 7px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface-soft));
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+}
+.order-eta-dot {
+  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+  background: var(--accent);
+  animation: etaPulse 1.9s var(--ease-soft) infinite;
+}
+.order-eta-text { display: flex; flex-direction: column; line-height: 1.12; }
+.order-eta-cap { font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--sub); }
+.order-eta-val { font-size: 12.5px; font-weight: 600; color: var(--ink); font-family: 'Geist Mono', monospace; }
+@keyframes etaPulse {
+  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 60%, transparent); }
+  70%  { box-shadow: 0 0 0 7px color-mix(in srgb, var(--accent) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent); }
+}
+
+/* 4-step delivery stepper: filled connector + node walk forward by status */
+.order-track {
+  display: flex;
+  padding: 13px 18px 15px;
+  border-top: 1px solid var(--card-border);
+  background: color-mix(in srgb, var(--ink) 2%, transparent);
+}
+.track-step {
+  position: relative; flex: 1;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+}
+.track-step::before {
+  content: ''; position: absolute;
+  top: 7px; left: -50%; right: 50%; height: 2px;
+  background: var(--card-border);
+  z-index: 0;
+}
+.track-step:first-child::before { display: none; }
+.track-step.is-done::before,
+.track-step.is-current::before { background: var(--accent); }
+.track-node {
+  box-sizing: border-box;
+  position: relative; z-index: 1;
+  width: 16px; height: 16px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--card);
+  border: 2px solid var(--card-border);
+  color: #06140d;
+  transition: background .3s var(--ease-soft), border-color .3s var(--ease-soft);
+}
+.track-step.is-done .track-node { background: var(--accent); border-color: var(--accent); }
+.track-step.is-current .track-node {
+  background: var(--accent); border-color: var(--accent);
+  animation: nodePulse 1.9s var(--ease-soft) infinite;
+}
+.theme-indigo .track-step.is-done .track-node,
+.theme-indigo .track-step.is-current .track-node,
+.theme-lily .track-step.is-done .track-node,
+.theme-lily .track-step.is-current .track-node { color: #fff; }
+@keyframes nodePulse {
+  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 38%, transparent); }
+  70%  { box-shadow: 0 0 0 7px color-mix(in srgb, var(--accent) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent); }
+}
+.track-label {
+  font-size: 9.5px; letter-spacing: -0.005em; text-align: center;
+  color: var(--sub); white-space: nowrap;
+  transition: color .3s var(--ease-soft);
+}
+.track-step.is-done .track-label { color: color-mix(in srgb, var(--ink) 66%, var(--sub)); }
+.track-step.is-current .track-label { color: var(--ink); font-weight: 600; }
+
+@media (prefers-reduced-motion: reduce) {
+  .order-eta-dot,
+  .track-step.is-current .track-node { animation: none; }
+}
+
+/* ─── BOTTOM TABS (persistent pill nav, matches figma) ─── */
+/* Figma "Tab Buttons Container": a compact, centered, blurred dark pill.
+   Kept at 3 tabs (Card · AI Order · Account) per the user, AI mark centered. */
+.tab-bar-dock {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 40;
+  display: flex; justify-content: center;
+  padding: 40px 16px 18px;
+  /* premium fade: fully transparent up top → solid black at the very bottom, so the
+     content/canvas melts into the bar instead of meeting a flat black rectangle. */
+  background: linear-gradient(to bottom,
+    rgba(0,0,0,0) 0%,
+    rgba(0,0,0,0.35) 38%,
+    rgba(0,0,0,0.72) 66%,
+    rgba(0,0,0,0.93) 86%,
+    #000 100%);
+  pointer-events: none;
+}
+.bottom-tabs {
+  pointer-events: auto;
+  position: relative; z-index: 41;
+  display: flex; align-items: center;
+  padding: 4px; gap: 0;
+  background: rgba(18,18,18,0.6);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+          backdrop-filter: blur(20px) saturate(140%);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 64px;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.05) inset,
+    0 12px 32px rgba(0,0,0,0.5);
 }
 .theme-lily .bottom-tabs {
-  background: rgba(255,255,255,0.7);
-  border-color: rgba(15,31,6,0.1);
-  box-shadow: 0 10px 28px rgba(15,31,6,0.18);
+  background: rgba(255,255,255,0.72);
+  border-color: rgba(15,31,6,0.08);
+  box-shadow: 0 12px 30px rgba(15,31,6,0.16);
 }
 .bottom-tabs .tab {
-  flex: 1;
+  flex: 0 0 auto;
+  min-width: 92px;
   appearance: none; border: none; background: transparent;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 4px;
-  padding: 8px 4px 9px;
-  border-radius: 30px;
+  gap: 2px;
+  height: 56px; padding: 6px 10px 7px;
+  border-radius: 100px;
   cursor: pointer;
-  color: rgba(255,255,255,0.55);
+  color: #ffffff;
   font-family: inherit;
-  transition: color .15s ease, background .2s ease;
+  transition: background .22s var(--ease-soft), color .2s var(--ease-soft);
+  -webkit-tap-highlight-color: transparent;
 }
-.theme-lily .bottom-tabs .tab { color: rgba(15,31,6,0.55); }
-.bottom-tabs .tab:hover { color: var(--ink); }
-.bottom-tabs .tab.is-active {
-  color: var(--accent);
-  background: rgba(0,0,0,0.5);
-  box-shadow:
-    inset 0 0 0 1px rgba(255,255,255,0.04),
-    inset 0 6px 18px rgba(0,0,0,0.5);
-}
-.theme-lily .bottom-tabs .tab.is-active {
-  background: rgba(15,31,6,0.08);
-  box-shadow: inset 0 0 0 1px rgba(15,31,6,0.06);
-}
+.bottom-tabs .tab.is-active { background: #1e1e1e; color: #ffffff; }
+.theme-lily .bottom-tabs .tab { color: #0f1f06; }
+.theme-lily .bottom-tabs .tab.is-active { background: rgba(15,31,6,0.08); }
 
-/* AI tab frog icon */
-.tab-frog {
-  position: relative;
-  width: 36px; height: 36px;
-  flex-shrink: 0;
-}
-.tab-frog-img {
-  width: 100%; height: 100%; display: block;
-  object-fit: contain;
-  border-radius: 12px;
-  image-rendering: auto;
-  filter: saturate(0.6) brightness(0.7);
-  transition: filter .2s ease;
-}
-.is-active .tab-frog-img { filter: none; }
-/* AI tab logo — masked PNG tinted by the tab's currentColor (grey when idle,
-   accent-green when active), exactly like the Card/Account line icons */
+/* AI tab logo (centered) — the Solayer emerald mark, always brand-green */
 .tab-emerald {
-  width: 36px; height: 36px;
+  width: 28px; height: 28px;
   flex-shrink: 0;
-  background-color: currentColor;
-  -webkit-mask: url('Emerald Logo.png') center / 26px 26px no-repeat;
-          mask: url('Emerald Logo.png') center / 26px 26px no-repeat;
+  background-color: var(--accent);
+  -webkit-mask: url('Emerald Logo.png') center / 23px 23px no-repeat;
+          mask: url('Emerald Logo.png') center / 23px 23px no-repeat;
 }
-.tab-frog-sparkle {
-  position: absolute; top: -4px; right: -5px;
-  opacity: 0;
-  transition: opacity .2s ease;
-}
-.is-active .tab-frog-sparkle {
-  opacity: 1;
-  animation: sparklepulse 2.4s ease-in-out infinite;
-}
-
-/* Card + Account outline icons */
+/* Card + Account icons (Phosphor) — white when active, dimmed otherwise */
 .tab-line-icon {
   display: flex; align-items: center; justify-content: center;
-  width: 36px; height: 36px;
+  width: 28px; height: 28px;
 }
+.bottom-tabs .tab:not(.is-active) .tab-line-icon { color: rgba(255,255,255,0.55); }
+.theme-lily .bottom-tabs .tab:not(.is-active) .tab-line-icon { color: rgba(15,31,6,0.5); }
 
 .tab-label {
-  font-size: 12px; font-weight: 500; letter-spacing: -0.005em;
+  font-size: 10px; font-weight: 500; line-height: 12px;
+  letter-spacing: -0.005em;
   font-family: 'Geist', sans-serif;
 }
+.bottom-tabs .tab:not(.is-active) .tab-label { opacity: 0.4; }
+
+/* ─────────────────────────────────────────────────────────────
+   CARD TAB — pixel rebuild of the Figma "Card Default View".
+   Fixed dark palette to match the mock exactly: canvas #0a0a0a, ink
+   #fefefe, label #969696, meta #717373, dim #444545, fail #e98578.
+   Renders its own "Cards" header (shared app header hidden this phase).
+   ───────────────────────────────────────────────────────────── */
+.card-screen {
+  position: relative; z-index: 10;
+  flex: 1 1 auto; min-height: 0;
+  display: flex; flex-direction: column;
+  background: #0a0a0a;
+}
+/* (the top emerald glow now lives on .card-scroll via background-attachment:local
+   so it scrolls away WITH the content instead of sitting as a fixed band) */
+.cardx-header {
+  position: relative; z-index: 2; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  /* header lives INSIDE .card-scroll now, so it scrolls with everything and the
+     shared scroll-glow already covers it (no separate background). Side insets come
+     from .card-scroll's padding; only the safe-area top inset lives here. */
+  padding: max(calc(env(safe-area-inset-top, 0px) + 16px), 60px) 0 8px;
+}
+.cardx-title { font-size: 24px; font-weight: 500; color: #fff; letter-spacing: -0.02em; }
+.cardx-header-actions { display: flex; align-items: center; gap: 12px; }
+.cardx-circle-btn {
+  width: 44px; height: 44px; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 40px;
+  background: rgba(25,25,24,0.2);
+  border: 1px solid rgba(255,255,255,0.06);
+  color: #fff; cursor: pointer;
+  transition: background .2s var(--ease-soft), transform .18s var(--ease-out);
+  -webkit-tap-highlight-color: transparent;
+}
+.cardx-circle-btn:hover { background: rgba(255,255,255,0.08); }
+.cardx-circle-btn:active { transform: scale(0.94); }
+
+.card-scroll {
+  position: relative; z-index: 1;
+  flex: 1 1 auto; min-height: 0;
+  overflow-y: auto; overflow-x: hidden;
+  display: flex; flex-direction: column; gap: 24px;
+  padding: 0 20px var(--dock-h);
+  scrollbar-width: none;
+  /* top emerald glow (Figma) — pinned to the CONTENT (background-attachment:local),
+     so it sits behind the balance/card at rest and slides away on scroll. No fixed band. */
+  background-image: linear-gradient(180deg, rgba(8,77,62,0.30) 0px, rgba(8,77,62,0) 400px);
+  background-repeat: no-repeat;
+  background-attachment: local;
+}
+.card-scroll::-webkit-scrollbar { display: none; }
+
+/* balance */
+.cardx-balance { display: flex; flex-direction: column; gap: 12px; }
+.cardx-bal-head { display: flex; align-items: center; gap: 4px; color: #969696; }
+.cardx-bal-lbl { font-size: 14px; font-weight: 400; color: #969696; letter-spacing: -0.01em; }
+.cardx-bal-amt { font-size: 42px; font-weight: 500; color: #fff; letter-spacing: -0.03em; line-height: 1.2; }
+.cardx-bal-row { display: flex; align-items: center; gap: 20px; font-size: 14px; letter-spacing: -0.01em; }
+.cardx-bal-stat { display: inline-flex; align-items: center; gap: 4px; }
+.cardx-bal-stat .dim { color: #969696; font-weight: 400; }
+.cardx-bal-stat > span:last-child { color: #fff; font-weight: 500; }
+.cardx-bal-div { width: 1px; height: 12px; background: rgba(255,255,255,0.2); flex-shrink: 0; }
+
+/* card stack (primary card + a peeking sliver of the next) */
+.cardx-cards { display: flex; gap: 12px; }
+.cardx-card {
+  position: relative; flex: 0 0 calc(100% - 20px);
+  aspect-ratio: 362 / 207;
+  border-radius: 17px; overflow: hidden;
+  background: linear-gradient(270deg, #042f25 0%, #054e3e 30%, #042f25 100%);
+  box-shadow: 0 4px 56px rgba(8,77,62,0.21);
+}
+.cardx-card-peek { opacity: 0.55; }
+.cardx-card-tex { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.15; pointer-events: none; }
+.cardx-card-logo { position: absolute; left: 22px; top: 20px; width: 73px; height: 20px; object-fit: contain; }
+.cardx-card-num { position: absolute; left: 24px; bottom: 20px; display: flex; align-items: center; gap: 10px; }
+.cardx-card-dots { display: inline-flex; gap: 4px; }
+.cardx-card-dots i { width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,0.55); }
+.cardx-card-digits { font-size: 14px; font-weight: 500; color: #fff; letter-spacing: 1px; font-family: 'Geist Mono', monospace; }
+
+/* quick actions */
+.cardx-actions { display: flex; gap: 12px; }
+.cardx-action {
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+  padding: 20px 16px; border-radius: 12px;
+  background: rgba(237,243,242,0.08); border: none; cursor: pointer;
+  transition: background .2s var(--ease-soft), transform .18s var(--ease-out);
+  -webkit-tap-highlight-color: transparent;
+}
+.cardx-action:hover { background: rgba(237,243,242,0.14); }
+.cardx-action:active { transform: scale(0.97); }
+.cardx-action svg { color: #fff; }
+.cardx-action span { font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.6); }
+
+/* transactions */
+.cardx-tx { display: flex; flex-direction: column; gap: 16px; padding-top: 12px; }
+.cardx-tx-head { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; color: #717373; }
+.cardx-tx-title { font-size: 16px; font-weight: 500; color: #717373; letter-spacing: -0.005em; }
+.cardx-tx-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.cardx-tx-row { display: flex; align-items: center; justify-content: space-between; height: 48px; gap: 8px; }
+.cardx-tx-info { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; padding-right: 8px; }
+.cardx-avatar {
+  flex-shrink: 0; width: 40px; height: 40px; border-radius: 60px; overflow: hidden;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,0.12);
+}
+.cardx-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cardx-avatar-letter { font-size: 17px; font-weight: 500; color: #fefefe; }
+.cardx-tx-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.cardx-tx-name { font-size: 14px; font-weight: 500; color: #fefefe; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cardx-tx-sub { display: flex; align-items: center; gap: 4px; font-size: 12px; white-space: nowrap; }
+.cardx-tx-sub > span { color: rgba(255,255,255,0.6); }
+.cardx-tx-sub .dot { color: rgba(255,255,255,0.4); }
+.cardx-tx-amtcol { flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.cardx-tx-amt { font-size: 14px; font-weight: 500; color: #fefefe; }
+.cardx-tx-amt.is-dim { color: #444545; }
+.cardx-status { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 500; color: #717373; }
+.cardx-status.is-failed { color: #e98578; }
 
 /* (cart-bar is now an in-flow pinned footer — no absolute offset needed) */
 
@@ -1848,7 +2145,7 @@
   flex: 1 1 auto;
   display: flex; flex-direction: column;
   min-height: 0; overflow-y: auto;
-  padding: 4px 0 24px;
+  padding: 4px 0 var(--dock-h);
   gap: 20px;
 }
 .account-header-card {
@@ -2672,6 +2969,20 @@
       transparent 72%),
     var(--surface-soft);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 5%, transparent);
+}
+
+/* generated glassy-emerald category icon — replaces the flat emoji glyph in the
+   carousel + "order something else" chips. It carries its own glass form and
+   lighting, so it needs no backing circle; a soft drop-shadow grounds it. */
+.quick-chip-icon {
+  width: 30px; height: 30px;
+  flex-shrink: 0;
+  object-fit: contain;
+  filter:
+    drop-shadow(0 2px 5px color-mix(in srgb, var(--accent) 24%, transparent))
+    drop-shadow(0 1px 1px rgba(0,0,0,0.22));
+  pointer-events: none;
+  -webkit-user-select: none; user-select: none;
 }
 
 /* theme-lily light surface variants */

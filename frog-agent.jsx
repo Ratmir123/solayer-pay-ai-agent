@@ -889,7 +889,8 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
       '--intensity': intensity
     }}>
 
-      {/* header — adapts to phase */}
+      {/* header — adapts to phase (the Card tab renders its own Figma header) */}
+      {phase !== 'wallet' &&
       <header className="agent-header">
         {phase === 'confirming' || phase === 'browse' || phase === 'menu' || phase === 'orders' ?
         <button className="icon-btn back-btn" onClick={() => {
@@ -926,6 +927,7 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
           }
         </button>
       </header>
+      }
 
       {/* ── IDLE: greeting hero + compact category chips ── */}
       {phase === 'idle' &&
@@ -995,7 +997,7 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
               style={{ '--cat-tint': c.tint, animationDelay: `${i * 25}ms` }}
               onClick={() => {pickCategory(c.key);setShowMoreChips(false);}}
               aria-label={`Order ${c.label.toLowerCase()}`}>
-                      <span className="quick-chip-emoji" aria-hidden="true">{c.emoji}</span>
+                      <CategoryIcon cat={c} />
                       <span className="quick-chip-label">{c.label}</span>
                     </button>
               )}
@@ -1053,7 +1055,7 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
         theme={theme}
         upcoming={orders.upcoming}
         past={orders.past}
-        onPick={() => {}}
+        onReorder={pickCategory}
         onClose={goIdle} />
 
       }
@@ -1203,6 +1205,24 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
 // so the drift decelerates and re-accelerates softly instead of snapping. Under
 // prefers-reduced-motion it's a static, freely-swipeable single row.
 // ─────────────────────────────────────────────────────────────
+// Category chip glyph. Prefers the generated glassy-emerald icon
+// (images/icon-<key>.png) and quietly falls back to the original emoji until
+// that asset exists — so the carousel keeps working before the background
+// generation finishes, then upgrades to the custom icons on next load.
+function CategoryIcon({ cat }) {
+  const [failed, setFailed] = React.useState(false);
+  if (failed) {
+    return <span className="quick-chip-emoji" aria-hidden="true">{cat.emoji}</span>;
+  }
+  return (
+    <img
+      className="quick-chip-icon"
+      src={`images/icon-${cat.key}.png`}
+      alt="" aria-hidden="true" draggable="false"
+      onError={() => setFailed(true)} />);
+
+}
+
 function DishCarousel({ categories, onPick }) {
   const trackRef = useRef(null);
   const speedRef = useRef(1);   // eased current multiplier (0..1)
@@ -1326,7 +1346,7 @@ function DishCarousel({ categories, onPick }) {
               aria-hidden={copy === 1 ? 'true' : undefined}
               onClick={() => onPick(c.key)}
               aria-label={`Order ${c.label.toLowerCase()}`}>
-              <span className="quick-chip-emoji" aria-hidden="true">{c.emoji}</span>
+              <CategoryIcon cat={c} />
               <span className="quick-chip-label">{c.label}</span>
             </button>
           )
@@ -1515,7 +1535,8 @@ function BottomTabs({ active, onNav, ordersCount, accent }) {
   { key: 'account', label: 'Account' }];
 
   return (
-    <nav className="bottom-tabs" aria-label="primary">
+    <div className="tab-bar-dock">
+      <nav className="bottom-tabs" aria-label="primary">
       {TABS.map((t) => {
         const isActive = t.key === active;
         return (
@@ -1527,27 +1548,17 @@ function BottomTabs({ active, onNav, ordersCount, accent }) {
             <span className="tab-emerald" aria-hidden="true" />
             }
               {t.key === 'card' &&
-            <span className="tab-line-icon" aria-hidden="true">
-                  <svg width="28" height="22" viewBox="0 0 28 22" fill="none">
-                    <rect x="2" y="3" width="24" height="16" rx="3" stroke="currentColor" strokeWidth="1.6" />
-                    <path d="M2 8h24" stroke="currentColor" strokeWidth="1.6" />
-                  </svg>
-                </span>
+            <span className="tab-line-icon" aria-hidden="true"><PhCreditCard size={28} /></span>
             }
               {t.key === 'account' &&
-            <span className="tab-line-icon" aria-hidden="true">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" strokeWidth="1.6" />
-                    <circle cx="12" cy="10" r="2.6" stroke="currentColor" strokeWidth="1.6" />
-                    <path d="M7 18.5c1.2-2.2 3-3.2 5-3.2s3.8 1 5 3.2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-                  </svg>
-                </span>
+            <span className="tab-line-icon" aria-hidden="true"><PhUserCircle size={28} /></span>
             }
               <span className="tab-label">{t.label}</span>
           </button>);
 
       })}
-    </nav>);
+      </nav>
+    </div>);
 
 }
 
@@ -1606,53 +1617,138 @@ const MOCK_TX = [
 { id: 't5', to: 'Solana Wheels', emoji: '🚗', when: '6 days ago', amt: -12.40, note: 'Ride to Mission St' },
 { id: 't6', from: 'USDC earn', emoji: '✨', when: '1 wk ago', amt: 8.31, note: 'reward · Solayer staking' }];
 
-function WalletScreen({ theme, orders }) {
+// Phosphor-style icons for the Card tab (recreated as inline SVG; currentColor).
+function PhPlus({ size = 24 }) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14M12 5v14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>;
+}
+function PhGift({ size = 24 }) {
   return (
-    <div className="wallet-area">
-      <section className="wallet-balance">
-        <div className="wallet-bal-lbl">Available · USDC</div>
-        <div className="wallet-bal-amt">2,481.39</div>
-        <div className="wallet-bal-sub">on Solana · synced 12s ago</div>
-        <div className="wallet-actions">
-          <WalletAction label="Top up" glyph="↓" primary />
-          <WalletAction label="Send" glyph="↑" />
-          <WalletAction label="Receive" glyph="↗" />
-          <WalletAction label="Earn" glyph="✨" />
-        </div>
-      </section>
-
-      <section className="wallet-section">
-        <div className="section-row">
-          <h3 className="section-title">Activity</h3>
-          <span className="section-tag">last 7 days</span>
-        </div>
-        <ul className="tx-list">
-          {MOCK_TX.map((t) =>
-          <li key={t.id} className="tx-row">
-              <span className="tx-emoji">{t.emoji}</span>
-              <span className="tx-body">
-                <span className="tx-name">{t.to || t.from}</span>
-                <span className="tx-note">{t.note}</span>
-              </span>
-              <span className="tx-side">
-                <span className={`tx-amt ${t.amt < 0 ? 'out' : 'in'}`}>
-                  {t.amt < 0 ? '−' : '+'}${Math.abs(t.amt).toFixed(2)}
-                </span>
-                <span className="tx-when">{t.when}</span>
-              </span>
-            </li>
-          )}
-        </ul>
-      </section>
-    </div>);
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="3.5" y="9" width="17" height="11.5" rx="1.6" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M2.5 9h19M12 9v11.5" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M12 9s-1-4.2-3.4-4.2A1.85 1.85 0 0 0 8 8.5c.95.55 4 .5 4 .5Zm0 0s1-4.2 3.4-4.2A1.85 1.85 0 0 1 16 8.5c-.95.55-4 .5-4 .5Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+    </svg>);
 
 }
-function WalletAction({ label, glyph, primary }) {
+function PhEye({ size = 16 }) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z" stroke="currentColor" strokeWidth="1.6" /><circle cx="12" cy="12" r="2.7" stroke="currentColor" strokeWidth="1.6" /></svg>;
+}
+function PhDownload({ size = 20 }) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 4v10m0 0l-3.6-3.6M12 14l3.6-3.6M5 19.5h14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+}
+function PhWallet({ size = 20 }) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 8.2V6.6A1.6 1.6 0 0 1 5.6 5H17v3.2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /><rect x="3" y="8.2" width="18" height="11.3" rx="2.4" stroke="currentColor" strokeWidth="1.6" /><circle cx="16.6" cy="13.8" r="1.25" fill="currentColor" /></svg>;
+}
+function PhCaretRight({ size = 16 }) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+}
+function PhClock({ size = 12 }) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8.6" stroke="currentColor" strokeWidth="1.8" /><path d="M12 7.4V12l3.1 2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+}
+function PhXCircle({ size = 12 }) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8.6" stroke="currentColor" strokeWidth="1.8" /><path d="M9.2 9.2l5.6 5.6M14.8 9.2l-5.6 5.6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>;
+}
+function PhCreditCard({ size = 28 }) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="2.6" stroke="currentColor" strokeWidth="1.6" /><path d="M2.5 9.5h19" stroke="currentColor" strokeWidth="1.6" /></svg>;
+}
+function PhUserCircle({ size = 28 }) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.6" /><circle cx="12" cy="10" r="3" stroke="currentColor" strokeWidth="1.6" /><path d="M6 18.4a7 7 0 0 1 12 0" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>;
+}
+
+// Card-tab transactions (exact data from the Figma "Card Default View").
+const CARD_TX = [
+{ id: 'c1', name: 'HungryPanda AU', kind: 'Transaction', method: 'Cash', amount: '$9,765.85', status: 'pending', letter: 'H' },
+{ id: 'c2', name: 'Solayer Emerald Card', kind: 'Transaction', method: 'Card', amount: '$5.50', status: 'pending', img: 'fig-mlogo-solayer.png' },
+{ id: 'c3', name: 'ALP*McDonalds', kind: 'Transaction', method: 'Food', amount: '$35.75', status: 'failed', dim: true, img: 'fig-mlogo-mcd.png' },
+{ id: 'c4', name: 'EcoShop', kind: 'Refund', method: 'Debit', amount: '$50.00', status: null, letter: 'J' },
+{ id: 'c5', name: 'FashionCorner', kind: 'Transaction', method: 'Debit', amount: '$89.99', status: null, letter: 'F' },
+{ id: 'c6', name: 'BookHaven', kind: 'Transaction', method: 'Cash', amount: '$120.75', status: 'completed', letter: 'B' },
+{ id: 'c7', name: 'Meet Fresh', kind: 'Transaction', method: 'Cash', amount: '$1,234.21', status: null, letter: 'M' },
+{ id: 'c8', name: 'GadgetHub', kind: 'Purchase', method: 'Credit', amount: '$1,250.00', status: null, letter: 'G' },
+{ id: 'c9', name: 'TechStore', kind: 'Purchase', method: 'Credit', amount: '$2,500.00', status: 'pending', letter: 'T' }];
+
+
+function TxStatus({ status }) {
+  if (status === 'failed')
+  return <span className="cardx-status is-failed"><PhXCircle />Failed</span>;
+  return <span className="cardx-status"><PhClock />{status === 'completed' ? 'Completed' : 'Pending'}</span>;
+}
+
+// Card tab — pixel rebuild of the Figma "Card Default View" (renders its own header).
+function WalletScreen({ theme, orders }) {
   return (
-    <button className={`wallet-action ${primary ? 'is-primary' : ''}`}>
-      <span className="wa-icon">{glyph}</span>
-      <span className="wa-label">{label}</span>
-    </button>);
+    <div className="card-screen">
+      <div className="card-scroll">
+        <div className="cardx-header">
+          <span className="cardx-title">Cards</span>
+          <div className="cardx-header-actions">
+            <button className="cardx-circle-btn" type="button" aria-label="Add card"><PhPlus size={24} /></button>
+            <button className="cardx-circle-btn" type="button" aria-label="Rewards"><PhGift size={24} /></button>
+          </div>
+        </div>
+
+        <div className="cardx-balance">
+          <div className="cardx-bal-head">
+            <span className="cardx-bal-lbl">Total balance</span>
+            <PhEye size={16} />
+          </div>
+          <div className="cardx-bal-amt">$5,605.60</div>
+          <div className="cardx-bal-row">
+            <span className="cardx-bal-stat"><span className="dim">Available</span><span>$4035.20</span></span>
+            <span className="cardx-bal-div" aria-hidden="true" />
+            <span className="cardx-bal-stat"><span className="dim">Pending</span><span>$1570.40</span></span>
+          </div>
+        </div>
+
+        <div className="cardx-cards">
+          <div className="cardx-card">
+            <img className="cardx-card-tex" src="fig-card-texture.png" alt="" aria-hidden="true" draggable="false" />
+            <img className="cardx-card-logo" src="fig-solayer-wordmark.svg" alt="solayer" draggable="false" />
+            <div className="cardx-card-num">
+              <span className="cardx-card-dots" aria-hidden="true"><i /><i /><i /><i /></span>
+              <span className="cardx-card-digits">8678</span>
+            </div>
+          </div>
+          <div className="cardx-card cardx-card-peek" aria-hidden="true" />
+        </div>
+
+        <div className="cardx-actions">
+          <button className="cardx-action" type="button"><PhDownload size={20} /><span>Deposit</span></button>
+          <button className="cardx-action" type="button"><PhEye size={20} /><span>Card detail</span></button>
+          <button className="cardx-action" type="button"><PhWallet size={20} /><span>Add to wallet</span></button>
+        </div>
+
+        <div className="cardx-tx">
+          <div className="cardx-tx-head">
+            <span className="cardx-tx-title">Transactions</span>
+            <PhCaretRight size={16} />
+          </div>
+          <ul className="cardx-tx-list">
+            {CARD_TX.map((t) =>
+            <li key={t.id} className="cardx-tx-row">
+                <div className="cardx-tx-info">
+                  <span className="cardx-avatar">
+                    {t.img ?
+                  <img src={t.img} alt="" /> :
+                  <span className="cardx-avatar-letter">{t.letter}</span>}
+                  </span>
+                  <span className="cardx-tx-meta">
+                    <span className="cardx-tx-name">{t.name}</span>
+                    <span className="cardx-tx-sub">
+                      <span>{t.kind}</span><span className="dot">•</span><span>{t.method}</span>
+                    </span>
+                  </span>
+                </div>
+                <div className="cardx-tx-amtcol">
+                  <span className={`cardx-tx-amt${t.dim ? ' is-dim' : ''}`}>{t.amount}</span>
+                  {t.status && <TxStatus status={t.status} />}
+                </div>
+              </li>
+            )}
+          </ul>
+        </div>
+      </div>
+    </div>);
 
 }
 
@@ -1853,9 +1949,9 @@ function MenuScreen({ theme, store, category, menu, qtyOf, onAdd, onDec, cart, c
 // ─────────────────────────────────────────────────────────────
 // Orders screen — past + upcoming tabs
 // ─────────────────────────────────────────────────────────────
-function OrdersScreen({ theme, upcoming, past, onPick, onClose }) {
+function OrdersScreen({ theme, upcoming, past, onReorder, onClose }) {
   const [tab, setTab] = React.useState(upcoming.length ? 'upcoming' : 'past');
-  const list = tab === 'upcoming' ? upcoming : past;
+  const pastTotal = past.reduce((n, o) => n + (o.total || 0), 0);
   return (
     <div className="orders-area">
       <div className="orders-tabs">
@@ -1873,41 +1969,119 @@ function OrdersScreen({ theme, upcoming, past, onPick, onClose }) {
         style={{ transform: tab === 'upcoming' ? 'translateX(0)' : 'translateX(100%)' }} />
       </div>
 
-      {list.length === 0 ?
-      <div className="orders-empty">
-          <div className="orders-empty-emoji">{tab === 'upcoming' ? '🕒' : '📜'}</div>
-          <div className="orders-empty-title">
-            {tab === 'upcoming' ? 'no upcoming orders' : 'no past orders yet'}
-          </div>
-          <div className="orders-empty-sub">
-            {tab === 'upcoming' ? 'tap the mic to start one' : "let's get you fed"}
-          </div>
-        </div> :
+      {tab === 'upcoming' ?
+      upcoming.length === 0 ?
+      <OrdersEmpty kind="upcoming" /> :
+      <ul className="orders-list orders-live-list">
+          {upcoming.map((o, i) =>
+        <LiveOrderCard key={o.id} o={o} index={i} />)}
+        </ul> :
 
-      <ul className="orders-list">
-          {list.map((o) =>
-        <li key={o.id} className="order-card">
-              <div className="order-thumb"
-            style={{ backgroundColor: o.swatch, backgroundImage: (o.img || o.cat) ? `url('${storeImg({ img: o.img }, o.cat)}')` : 'none' }}>
-                {!o.cat && <span className="order-emoji">{o.emoji}</span>}
-              </div>
-              <div className="order-body">
-                <div className="order-top-row">
-                  <span className="order-name">{o.store}</span>
-                  <span className={`order-status status-${o.status}`}>
-                    <span className="status-dot" />{o.statusLabel}
-                  </span>
-                </div>
-                <div className="order-items">{o.summary}</div>
-                <div className="order-bottom-row">
-                  <span className="order-meta">{o.when}</span>
-                  <span className="order-price">${o.total.toFixed(2)} <span className="dim">USDC</span></span>
-                </div>
-              </div>
-            </li>
-        )}
-        </ul>
-      }
+      past.length === 0 ?
+      <OrdersEmpty kind="past" /> :
+      <div className="orders-history">
+          <div className="orders-summary">
+            <span className="orders-summary-label">{past.length} {past.length === 1 ? 'order' : 'orders'} · last 30 days</span>
+            <span className="orders-summary-total">${pastTotal.toFixed(2)} <span className="dim">USDC</span></span>
+          </div>
+          <ul className="orders-list">
+            {past.map((o, i) =>
+          <PastOrderCard key={o.id} o={o} index={i} onReorder={onReorder} />)}
+          </ul>
+        </div>}
+    </div>);
+
+}
+
+// Delivery progress steps for a live order. A freshly placed order ('preparing')
+// sits on step 1; the filled connector + pulsing node walk forward as it advances.
+const TRACK_STEPS = ['Ordered', 'Preparing', 'On the way', 'Delivered'];
+
+function LiveOrderCard({ o, index }) {
+  const active =
+  o.status === 'done' ? 3 :
+  o.status === 'enroute' ? 2 :
+  o.status === 'preparing' ? 1 : 0;
+  const eta = (o.statusLabel || '').replace(/^ETA\s*/i, '').trim();
+  return (
+    <li className="order-card order-live" style={{ animationDelay: `${index * 70}ms` }}>
+      <span className="order-live-glow" aria-hidden="true" />
+      <div className="order-live-head">
+        <div className="order-thumb order-thumb-lg"
+        style={{ backgroundColor: o.swatch, backgroundImage: (o.img || o.cat) ? `url('${storeImg({ img: o.img }, o.cat)}')` : 'none' }}>
+          {!o.cat && !o.img && <span className="order-emoji">{o.emoji}</span>}
+        </div>
+        <div className="order-live-info">
+          <span className="order-name">{o.store}</span>
+          <span className="order-items">{o.summary}</span>
+          <span className="order-price">${o.total.toFixed(2)} <span className="dim">USDC</span></span>
+        </div>
+        {eta &&
+        <div className="order-eta">
+            <span className="order-eta-dot" aria-hidden="true" />
+            <span className="order-eta-text">
+              <span className="order-eta-cap">arriving in</span>
+              <span className="order-eta-val">{eta}</span>
+            </span>
+          </div>}
+      </div>
+      <div className="order-track" role="list" aria-label="Delivery progress">
+        {TRACK_STEPS.map((s, i) =>
+        <div key={s} role="listitem"
+        className={`track-step${i < active ? ' is-done' : ''}${i === active ? ' is-current' : ''}`}>
+            <span className="track-node" aria-hidden="true">
+              {i < active &&
+            <svg width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M2.5 6.4l2.4 2.4L9.6 3.4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+            </span>
+            <span className="track-label">{s}</span>
+          </div>)}
+      </div>
+    </li>);
+
+}
+
+function PastOrderCard({ o, index, onReorder }) {
+  return (
+    <li className="order-card order-past" style={{ animationDelay: `${index * 50}ms` }}>
+      <div className="order-thumb"
+      style={{ backgroundColor: o.swatch, backgroundImage: (o.img || o.cat) ? `url('${storeImg({ img: o.img }, o.cat)}')` : 'none' }}>
+        {!o.cat && !o.img && <span className="order-emoji">{o.emoji}</span>}
+      </div>
+      <div className="order-body">
+        <div className="order-top-row">
+          <span className="order-name">{o.store}</span>
+          <span className="order-meta">{o.when}</span>
+        </div>
+        <div className="order-items">{o.summary}</div>
+        <div className="order-bottom-row">
+          <span className="order-status-done">
+            <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M2.8 7.2l2.6 2.6L11.2 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            {o.statusLabel}
+          </span>
+          <span className="order-price">${o.total.toFixed(2)} <span className="dim">USDC</span></span>
+        </div>
+      </div>
+      {o.cat && onReorder &&
+      <button className="order-reorder" type="button"
+      onClick={() => onReorder(o.cat)}
+      aria-label={`Order again from ${o.store}`}>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M13.2 8a5.2 5.2 0 1 1-1.5-3.66M13.4 2.2v3h-3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>
+      </button>}
+    </li>);
+
+}
+
+function OrdersEmpty({ kind }) {
+  const up = kind === 'upcoming';
+  return (
+    <div className="orders-empty">
+      <span className="orders-empty-orb" aria-hidden="true">
+        <span className="orders-empty-emoji">{up ? '🍽️' : '🧾'}</span>
+      </span>
+      <div className="orders-empty-title">{up ? 'nothing cooking yet' : 'no orders yet'}</div>
+      <div className="orders-empty-sub">
+        {up ? 'your live orders will track here' : "let's get you fed"}
+      </div>
     </div>);
 
 }

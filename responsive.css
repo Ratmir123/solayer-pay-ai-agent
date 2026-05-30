@@ -56,11 +56,24 @@
     padding-left: max(18px, env(safe-area-inset-left, 0px));
     padding-right: max(18px, env(safe-area-inset-right, 0px));
   }
-  .bottom-tabs {
-    /* was 28px bottom (cleared the fake home indicator); now the real one */
-    margin-bottom: max(env(safe-area-inset-bottom, 0px) + 10px, 14px);
-    margin-left: max(14px, env(safe-area-inset-left, 0px));
-    margin-right: max(14px, env(safe-area-inset-right, 0px));
+  /* Card-tab header: same fix as .agent-header. On desktop it keeps the 60px
+     offset that reserves room for the mockup status bar; on a real phone there's
+     no fake status bar, so drop it and hug the notch — otherwise an empty band
+     sits above "Cards". */
+  /* header scrolls inside .card-scroll now: only the top safe-area inset lives on
+     it; the side insets move to .card-scroll so they apply to the whole column. */
+  .cardx-header {
+    padding-top: max(env(safe-area-inset-top, 0px) + 14px, 20px);
+  }
+  .card-scroll {
+    padding-left: max(20px, env(safe-area-inset-left, 0px));
+    padding-right: max(20px, env(safe-area-inset-right, 0px));
+  }
+  .tab-bar-dock {
+    /* the gradient dock owns the bottom spacing now → real device safe-areas */
+    padding-bottom: max(env(safe-area-inset-bottom, 0px) + 10px, 14px);
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
   }
   /* keep the composer/footer column on the same safe horizontal inset */
   .agent-footer {
@@ -84,7 +97,7 @@
 
 /* ── Landscape phones — shorten the big top offset so content fits ── */
 @media (max-height: 480px) and (orientation: landscape) and (hover: none) and (pointer: coarse) {
-  .agent-header { padding-top: max(env(safe-area-inset-top, 0px) + 8px, 12px); }
-  .bottom-tabs  { margin-bottom: max(env(safe-area-inset-bottom, 0px) + 6px, 10px);
-                  margin-top: 4px; }
+  .agent-header, .cardx-header { padding-top: max(env(safe-area-inset-top, 0px) + 8px, 12px); }
+  .tab-bar-dock { padding-bottom: max(env(safe-area-inset-bottom, 0px) + 6px, 10px);
+                  padding-top: 20px; }
 }
