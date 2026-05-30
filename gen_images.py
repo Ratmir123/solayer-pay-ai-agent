@@ -38,6 +38,7 @@ PROMPTS = {
     "dessert": "A tiramisu slice dusted with cocoa beside brown-butter cookies and a macaron, on dark marble, elegant patisserie styling.",
     "ride": "A sleek black luxury electric sedan parked on a wet city street at night, glowing neon reflections on the paintwork, cinematic.",
     "groceries": "A fresh premium grocery haul arranged on dark wood — organic produce, farm eggs, a sourdough loaf, avocados and bottled milk.",
+    "hotels": "A modern upscale hotel building exterior in the early evening, warm glowing lobby windows and a welcoming lit entrance framed by greenery, architectural real-estate photography.",
 }
 
 # Per-store hero shots. Each prompt depicts that store's signature item with a
@@ -82,6 +83,11 @@ STORE_PROMPTS = {
     "dessert-sugarlab": "A stack of three thick brown-butter chocolate-chunk cookies with crackled tops, gooey molten chocolate puddles, flaky sea-salt flakes on top, one cookie broken open showing a soft chewy center, dark wood backdrop, intimate macro shot.",
     "dessert-frost": "A perfect swirl of black-sesame soft-serve in a dark waffle cone, glossy charcoal-grey ice cream with visible sesame speckles, a single edible gold flake on the peak, held against a dark gradient background, low side angle.",
     "dessert-madeleine": "An elegant tiramisu slice with neat espresso-soaked ladyfinger layers, mascarpone cream and a heavy cocoa dust, on a small dark ceramic plate beside a tiny espresso cup with crema and a silver spoon, three-quarter angle, patisserie styling.",
+
+    # --- hotels (bare keys → store-hotel-*.png; real-estate framing avoids false moderation hits) ---
+    "hotel-emerald": "A bright elegant hotel room interior with a tidy made king-size bed, soft warm bedside lamps, neutral tones and large windows showing a city skyline in the evening, real-estate interior photography.",
+    "hotel-marina": "A spacious hotel room interior with a private balcony and large windows overlooking a calm marina at sunset, modern neutral furniture, warm lighting, real-estate interior photography.",
+    "hotel-skyline": "A stylish open-plan studio loft interior with floor-to-ceiling windows, designer furniture and a daytime downtown skyline view, real-estate interior photography.",
 }
 
 

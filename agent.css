@@ -2510,9 +2510,17 @@
   padding: 0 26px;
   will-change: transform;
   transform: translate3d(0,0,0);
+  /* WE own the horizontal drag; the browser keeps vertical page scroll. Without
+     this the mobile browser hijacks the sideways swipe and the finger can't grab. */
+  touch-action: pan-y;
+  cursor: grab;
+  user-select: none; -webkit-user-select: none;
 }
+.dish-track:active { cursor: grabbing; }
 /* drifting chips must not snap or stagger-animate */
 .dish-carousel .quick-chip { scroll-snap-align: none; animation: none; }
+/* during a drag the chips shouldn't eat the gesture or show a tap highlight */
+.dish-track .dish-chip { touch-action: none; -webkit-tap-highlight-color: transparent; }
 /* reduced-motion: no drift — a normal, freely-swipeable single row */
 .dish-carousel.is-static {
   overflow-x: auto; overflow-y: hidden;

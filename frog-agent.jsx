@@ -82,7 +82,8 @@ const CATEGORIES = [
 { key: 'chinese', label: 'Chinese', emoji: '🥡', tint: '#a16207' },
 { key: 'dessert', label: 'Dessert', emoji: '🍰', tint: '#be185d' },
 { key: 'ride', label: 'Ride', emoji: '🚗', tint: '#1e40af' },
-{ key: 'groceries', label: 'Groceries', emoji: '🛒', tint: '#15803d' }];
+{ key: 'groceries', label: 'Groceries', emoji: '🛒', tint: '#15803d' },
+{ key: 'hotels', label: 'Hotels', emoji: '🏨', tint: '#6d28d9' }];
 
 
 const STORES = {
@@ -124,7 +125,12 @@ const STORES = {
   dessert: [
   { name: 'Sugar Lab', item: 'Brown butter cookies × 6', price: 12.00, eta: '20 min', dist: '0.4 mi', rating: 4.9, swatch: '#be185d', img: 'store-dessert-sugarlab' },
   { name: 'Frost & Co.', item: 'Black sesame soft serve', price: 8.50, eta: '15 min', dist: '0.3 mi', rating: 4.8, swatch: '#9d174d', img: 'store-dessert-frost' },
-  { name: 'Madeleine', item: 'Tiramisu slice + espresso', price: 11.00, eta: '24 min', dist: '0.6 mi', rating: 4.7, swatch: '#831843', img: 'store-dessert-madeleine' }]
+  { name: 'Madeleine', item: 'Tiramisu slice + espresso', price: 11.00, eta: '24 min', dist: '0.6 mi', rating: 4.7, swatch: '#831843', img: 'store-dessert-madeleine' }],
+
+  hotels: [
+  { name: 'The Emerald', item: 'Deluxe king · 1 night', price: 240.00, eta: 'tonight', dist: '0.6 mi', rating: 4.9, swatch: '#6d28d9', img: 'store-hotel-emerald' },
+  { name: 'Marina Bay Hotel', item: 'Ocean-view suite', price: 360.00, eta: 'tonight', dist: '1.2 mi', rating: 4.8, swatch: '#5b21b6', img: 'store-hotel-marina' },
+  { name: 'Skyline Loft', item: 'City studio loft', price: 180.00, eta: 'tonight', dist: '0.4 mi', rating: 4.7, swatch: '#7c3aed', img: 'store-hotel-skyline' }]
 
 };
 
@@ -204,7 +210,16 @@ const MENUS = {
   { name: 'Avocados', desc: '3 ct — ripe', price: 5.00, emoji: '🥑' },
   { name: 'Roma tomatoes', desc: '1 lb', price: 3.50, emoji: '🍅' },
   { name: 'Cold brew, 32 oz', desc: 'Bottled — black', price: 8.00, emoji: '☕' },
-  { name: 'Dark chocolate bar', desc: '70% — single origin', price: 4.50, emoji: '🍫' }]
+  { name: 'Dark chocolate bar', desc: '70% — single origin', price: 4.50, emoji: '🍫' }],
+
+  hotels: [
+  { name: 'Standard queen', desc: '1 queen bed · city view', price: 160.00, emoji: '🛏️' },
+  { name: 'Deluxe king', desc: '1 king bed · high floor', price: 240.00, emoji: '🛏️' },
+  { name: 'Ocean-view suite', desc: 'King + lounge · balcony', price: 360.00, emoji: '🌊' },
+  { name: 'Studio loft', desc: 'Open plan · kitchenette', price: 180.00, emoji: '🏙️' },
+  { name: 'Family room', desc: '2 queens · sleeps 4', price: 300.00, emoji: '🛌' },
+  { name: 'Penthouse suite', desc: 'Top floor · panoramic', price: 620.00, emoji: '🌆' },
+  { name: 'Breakfast for two', desc: 'Daily · add-on', price: 28.00, emoji: '🥐' }]
 
 };
 
@@ -215,6 +230,7 @@ const INTENT_PATTERNS = [
 { match: /coffee|latte|espresso|cappuccino|mocha|cold ?brew|macchiato/i, cat: 'coffee' },
 { match: /ride|uber|lyft|taxi|car|trip|driver/i, cat: 'ride' },
 { match: /grocer|grocery|milk|eggs|bread|produce|veggies/i, cat: 'groceries' },
+{ match: /hotel|room|suite|stay|lodging|book.*(room|night)|check.?in/i, cat: 'hotels' },
 { match: /burger|cheeseburger|smash ?burger|patty/i, cat: 'burger' },
 { match: /chinese|noodle|fried rice|orange chicken|mapo|chow|wok|dumpling/i, cat: 'chinese' },
 { match: /dessert|cookie|ice ?cream|cake|donut|pastry|tiramisu|sweet/i, cat: 'dessert' }];
@@ -1191,6 +1207,8 @@ function DishCarousel({ categories, onPick }) {
   const trackRef = useRef(null);
   const speedRef = useRef(1);   // eased current multiplier (0..1)
   const targetRef = useRef(1);  // 0 = paused, 1 = running
+  const posRef = useRef(0);     // current scroll offset in px (auto-drift + drag share it)
+  const dragRef = useRef({ active: false, startX: 0, startPos: 0, moved: false, vel: 0, lastX: 0, lastT: 0, inertia: 0 });
   const [reduce] = useState(() =>
     typeof window !== 'undefined' && window.matchMedia &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -1201,7 +1219,8 @@ function DishCarousel({ categories, onPick }) {
     if (!track) return undefined;
     const SPEED = 20; // px/sec — calm, premium drift (frame-rate independent)
     const n = categories.length;
-    let raf = 0, pos = 0, last = 0, loop = 0;
+    let raf = 0, last = 0, loop = 0;
+    const d = dragRef.current;
 
     // advance = distance from copy-A's first chip to copy-B's first chip.
     // (padding-agnostic; scrollWidth/2 would be wrong because the track's end
@@ -1215,36 +1234,87 @@ function DishCarousel({ categories, onPick }) {
       const dt = last ? Math.min(ts - last, 50) : 16;
       last = ts;
       // ease the speed toward its target → soft decel on touch, soft accel on release
-      speedRef.current += (targetRef.current - speedRef.current) * 0.06;
+      if (!d.active) {
+        // flick inertia decays first, then hands back to the calm auto-drift
+        if (Math.abs(d.inertia) > 4) {
+          posRef.current += d.inertia * dt / 1000;
+          d.inertia *= Math.pow(0.95, dt / 16);
+        } else { d.inertia = 0; }
+        speedRef.current += (targetRef.current - speedRef.current) * 0.06;
+        posRef.current += SPEED * speedRef.current * dt / 1000;
+      }
       if (loop > 0) {
-        pos += SPEED * speedRef.current * dt / 1000;
-        if (pos >= loop) pos -= loop;
-        track.style.transform = `translate3d(${(-pos).toFixed(2)}px,0,0)`;
+        posRef.current = ((posRef.current % loop) + loop) % loop; // wrap both ways
+        track.style.transform = `translate3d(${(-posRef.current).toFixed(2)}px,0,0)`;
       }
       raf = requestAnimationFrame(tick);
     };
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { loop = 0; });
     raf = requestAnimationFrame(tick);
 
-    const pause = () => { targetRef.current = 0; };
-    const resume = () => { targetRef.current = 1; };
-    track.addEventListener('pointerenter', pause);
-    track.addEventListener('pointerleave', resume);
-    track.addEventListener('pointerdown', pause);
-    window.addEventListener('pointerup', resume);
+    // hover (desktop, fine pointer) gently pauses the drift
+    const hoverPause = () => { if (!d.active) targetRef.current = 0; };
+    const hoverResume = () => { if (!d.active) targetRef.current = 1; };
+    track.addEventListener('pointerenter', hoverPause);
+    track.addEventListener('pointerleave', hoverResume);
+
+    // grab + drag to scroll (touch and mouse). Drift pauses while held; on
+    // release a flick carries momentum, then the calm auto-drift eases back.
+    const onDown = (e) => {
+      d.active = true; d.moved = false;
+      d.startX = e.clientX; d.startPos = posRef.current;
+      d.lastX = e.clientX; d.lastT = e.timeStamp || performance.now();
+      d.vel = 0; d.inertia = 0;
+      targetRef.current = 0; speedRef.current = 0;
+      try { track.setPointerCapture(e.pointerId); } catch (_) {}
+    };
+    const onMove = (e) => {
+      if (!d.active) return;
+      const dx = e.clientX - d.startX;
+      if (Math.abs(dx) > 8) d.moved = true;       // tap vs swipe threshold
+      posRef.current = d.startPos - dx;            // strip follows the finger
+      const now = e.timeStamp || performance.now();
+      const dtv = now - d.lastT;
+      if (dtv > 0) {
+        const inst = -(e.clientX - d.lastX) / (dtv / 1000); // px/s of pos change
+        d.vel = 0.8 * inst + 0.2 * d.vel;          // smoothed velocity for the flick
+      }
+      d.lastX = e.clientX; d.lastT = now;
+    };
+    const onUp = (e) => {
+      if (!d.active) return;
+      d.active = false;
+      d.inertia = Math.max(-2600, Math.min(2600, d.vel)); // clamp flick speed
+      targetRef.current = 1;                       // ease the calm drift back in
+      try { track.releasePointerCapture(e.pointerId); } catch (_) {}
+    };
+    track.addEventListener('pointerdown', onDown);
+    track.addEventListener('pointermove', onMove);
+    track.addEventListener('pointerup', onUp);
+    track.addEventListener('pointercancel', onUp);
+
     return () => {
       cancelAnimationFrame(raf);
-      track.removeEventListener('pointerenter', pause);
-      track.removeEventListener('pointerleave', resume);
-      track.removeEventListener('pointerdown', pause);
-      window.removeEventListener('pointerup', resume);
+      track.removeEventListener('pointerenter', hoverPause);
+      track.removeEventListener('pointerleave', hoverResume);
+      track.removeEventListener('pointerdown', onDown);
+      track.removeEventListener('pointermove', onMove);
+      track.removeEventListener('pointerup', onUp);
+      track.removeEventListener('pointercancel', onUp);
     };
   }, [categories, reduce]);
 
   const copies = reduce ? [0] : [0, 1];
   return (
     <div className={`dish-carousel${reduce ? ' is-static' : ''}`} role="group" aria-label="Food categories">
-      <div className="dish-track" ref={trackRef}>
+      <div
+        className="dish-track"
+        ref={trackRef}
+        onClickCapture={(e) => {
+          // a drag must never fall through as a category tap
+          if (dragRef.current.moved) { e.preventDefault(); e.stopPropagation(); dragRef.current.moved = false; }
+        }}>
+
         {copies.map((copy) =>
           categories.map((c) =>
             <button
