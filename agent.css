@@ -4,9 +4,13 @@
 
 /* Motion tokens (Emil Kowalski) — built-in easings are too weak. Entrances and
    press feedback use --ease-out (fast start = reads instantly, long silky tail);
-   on-screen movement uses --ease-in-out. */
+   on-screen movement uses --ease-in-out. --ease-soft is the workhorse for
+   colour / background / border / shadow state changes so they breathe in and
+   out without abrupt starts/stops. Duration scale: ~180–240ms for small state
+   changes, ~300–420ms for entrances. */
 :root {
-  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-soft: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-in-out: cubic-bezier(0.76, 0, 0.24, 1);
 }
 
@@ -122,16 +126,43 @@
 .header-sub-center { margin-top: 2px; font-size: 12px; color: var(--sub); }
 
 .icon-btn {
-  appearance: none; border: none; background: transparent;
-  width: 40px; height: 40px; border-radius: 12px;
+  appearance: none;
+  background: var(--surface-soft);
+  border: 1px solid var(--card-border);
+  width: 44px; height: 44px; border-radius: 14px;
   display: flex; align-items: center; justify-content: center;
   color: var(--ink); cursor: pointer;
-  transition: background .15s ease, transform .12s ease;
+  transition:
+    background .2s var(--ease-out),
+    border-color .2s var(--ease-out),
+    transform .14s var(--ease-out),
+    box-shadow .2s var(--ease-out);
   flex-shrink: 0;
+  position: relative;
 }
-.icon-btn:hover { background: var(--chip); }
+.icon-btn:hover {
+  background: var(--surface-soft-hover);
+  border-color: color-mix(in srgb, var(--accent) 32%, var(--card-border));
+}
 .icon-btn:active { transform: scale(0.94); }
+.icon-btn:focus-visible {
+  outline: none;
+  border-color: color-mix(in srgb, var(--accent) 60%, var(--card-border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 32%, transparent);
+}
 .back-btn { background: var(--chip); }
+
+/* ─── unified screen entrance ───
+   Phase swap → wrappers mount and softly fade/rise in. transform+opacity only
+   so it's GPU-composited; .stage is intentionally excluded because the voice
+   orb owns its own (premium, intricate) entrance. */
+.chat-area, .browse-area, .menu-area, .orders-area, .screen-pad {
+  animation: screenIn .38s var(--ease-out) backwards;
+}
+@keyframes screenIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 
 /* ─── chat area (idle) ─── */
 .chat-area {
@@ -166,7 +197,7 @@
   align-items: flex-start; justify-content: space-between;
   padding: 16px;
   color: var(--ink); cursor: pointer;
-  transition: transform .16s var(--ease-out), background .2s ease;
+  transition: transform .18s var(--ease-out), background .22s var(--ease-soft);
   animation: chipIn .42s var(--ease-out) backwards;
   font-family: inherit;
 }
@@ -188,11 +219,11 @@
 
 /* ─── chat thread ─── */
 .chat-thread { padding: 6px 18px 24px; display: flex; flex-direction: column; gap: 12px; }
-.msg { display: flex; gap: 10px; align-items: flex-end; animation: bubbleIn .35s var(--ease-out) backwards; }
+.msg { display: flex; gap: 10px; align-items: flex-end; animation: bubbleIn .38s var(--ease-out) backwards; }
 .msg.tight { margin-top: 4px; }
 .msg-user { justify-content: flex-end; }
 @keyframes bubbleIn {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
@@ -590,11 +621,11 @@
   padding: 0; cursor: pointer;
   display: flex; flex-direction: column; gap: 12px;
   text-align: left; font-family: inherit;
-  animation: bubbleIn .4s var(--ease-out) backwards;
-  transition: transform .15s ease, opacity .15s ease;
+  animation: bubbleIn .42s var(--ease-out) backwards;
+  transition: transform .18s var(--ease-out), opacity .2s var(--ease-soft);
 }
 .browse-card:active { transform: scale(0.98); }
-.browse-card:hover { opacity: 0.95; }
+.browse-card:hover { opacity: 0.95; transform: translateY(-1px); }
 
 .browse-img {
   position: relative;
@@ -631,9 +662,9 @@
   position: absolute; top: 10px; right: 10px;
   appearance: none; border: none; background: rgba(0,0,0,0.35);
   backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-  width: 32px; height: 32px; border-radius: 999px;
+  width: 40px; height: 40px; border-radius: 999px;
   display: flex; align-items: center; justify-content: center;
-  cursor: pointer; transition: transform .15s ease, background .15s ease;
+  cursor: pointer; transition: transform .2s var(--ease-out), background .2s var(--ease-soft);
 }
 .browse-heart:hover { background: rgba(0,0,0,0.55); transform: scale(1.08); }
 
@@ -678,12 +709,10 @@
   display: flex; flex-direction: column;
   gap: 14px;
   overflow: hidden;                 /* clip the bleeding hero to the card radius */
-  backdrop-filter: blur(14px) saturate(150%);
-  -webkit-backdrop-filter: blur(14px) saturate(150%);
-  animation: cardIn .42s var(--ease-out) backwards;
+  animation: cardIn .44s var(--ease-out) backwards;
 }
 @keyframes cardIn {
-  from { opacity: 0; transform: translateY(16px); }
+  from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 /* review-card photo header — bleeds to the card edges, store identity overlaid */
@@ -773,7 +802,8 @@
   display: flex; align-items: center; justify-content: center;
   background: conic-gradient(var(--primary-pill) calc(var(--p) * 360deg),
                              color-mix(in srgb, var(--ink) 10%, transparent) 0);
-  transition: --p var(--dur, 1500ms) linear, box-shadow .4s var(--ease-out);
+  transition: --p var(--dur, 1500ms) linear, box-shadow .42s var(--ease-out);
+  will-change: transform;
 }
 .pay-bio.is-holding .pay-bio-ring { --p: 1; }
 .pay-bio.is-done .pay-bio-ring {
@@ -793,6 +823,7 @@
 .pay-bio.is-holding .pay-bio-inner,
 .pay-bio.is-done .pay-bio-inner { animation: none; }
 @keyframes bioBreathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.035); } }
+.pay-bio-inner { transition: transform .2s var(--ease-out); }
 .pay-bio:active .pay-bio-inner { transform: scale(0.97); }
 .pay-bio-label {
   font-size: 13.5px; color: var(--sub);
@@ -821,7 +852,7 @@
 .burst-ring {
   position: absolute; inset: 0;
   border-radius: 50%; border: 1.5px solid;
-  animation: burstRing 1.6s ease-out;
+  animation: burstRing 1.6s var(--ease-out);
 }
 @keyframes burstRing {
   from { transform: scale(0.4); opacity: 1; }
@@ -830,7 +861,7 @@
 .burst-disc {
   width: 80px; height: 80px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  animation: burstDisc .45s cubic-bezier(0.3, 0, 0.2, 1.4) backwards;
+  animation: burstDisc .5s cubic-bezier(0.34, 1.36, 0.32, 1) backwards;
   box-shadow: 0 12px 32px color-mix(in srgb, var(--primary-pill) 50%, transparent);
 }
 @keyframes burstDisc {
@@ -870,9 +901,11 @@
 }
 
 /* ─── footer / CTAs ─── */
+/* horizontal inset (14px) matches the .bottom-tabs outer margin so the
+   composer pill and the tab-bar pill share identical left/right edges */
 .agent-footer {
   position: relative; z-index: 20;
-  padding: 12px 24px 14px;
+  padding: 12px 14px 14px;
   display: flex; align-items: center; justify-content: center;
 }
 
@@ -888,7 +921,10 @@
   backdrop-filter: blur(14px) saturate(160%);
   -webkit-backdrop-filter: blur(14px) saturate(160%);
   box-shadow: 0 0 0 0.5px rgba(255,255,255,0.05), 0 6px 22px rgba(0,0,0,0.18);
-  transition: transform .12s ease, background .2s ease, filter .15s ease;
+  transition:
+    transform .16s var(--ease-out),
+    background .22s var(--ease-soft),
+    filter .18s var(--ease-soft);
 }
 .cta:active { transform: scale(0.97); }
 .cta.primary {
@@ -1004,9 +1040,12 @@
   font-family: inherit; text-align: left;
   width: 100%;
   -webkit-tap-highlight-color: transparent;
-  transition: transform .14s var(--ease-out), background .2s ease, border-color .2s ease;
+  transition:
+    transform .18s var(--ease-out),
+    background .22s var(--ease-soft),
+    border-color .22s var(--ease-soft);
   /* the text bubble lands first, then this follows — a quiet stagger */
-  animation: bubbleIn .35s var(--ease-out) 110ms backwards;
+  animation: bubbleIn .42s var(--ease-out) 120ms backwards;
 }
 .order-suggest:hover {
   background: var(--surface-soft-hover);
@@ -1062,9 +1101,9 @@
   backdrop-filter: blur(14px) saturate(160%);
   -webkit-backdrop-filter: blur(14px) saturate(160%);
   transition:
-    border-color .2s ease,
-    background .2s ease,
-    box-shadow .24s var(--ease-out);
+    border-color .24s var(--ease-soft),
+    background .24s var(--ease-soft),
+    box-shadow .28s var(--ease-out);
 }
 .composer:focus-within {
   border-color: color-mix(in srgb, var(--accent) 70%, var(--chip-border));
@@ -1078,7 +1117,7 @@
   flex: 1; min-width: 0;
   appearance: none; border: none; outline: none; background: transparent;
   color: var(--ink);
-  font-family: inherit; font-size: 15px;
+  font-family: inherit; font-size: 16px;
   letter-spacing: -0.005em;
   height: 44px;
   padding: 0;
@@ -1115,11 +1154,11 @@
   pointer-events: none;
   -webkit-tap-highlight-color: transparent;
   transition:
-    opacity .18s var(--ease-out),
-    transform .22s var(--ease-out),
-    filter .15s ease,
-    box-shadow .2s ease,
-    visibility 0s linear .22s;
+    opacity .22s var(--ease-out),
+    transform .26s var(--ease-out),
+    filter .18s var(--ease-soft),
+    box-shadow .22s var(--ease-soft),
+    visibility 0s linear .26s;
 }
 .composer-actions[data-active="mic"] .composer-mic,
 .composer-actions[data-active="send"] .composer-send {
@@ -1127,17 +1166,17 @@
   transform: scale(1);
   pointer-events: auto;
   transition:
-    opacity .2s var(--ease-out),
-    transform .24s var(--ease-out),
-    filter .15s ease,
-    box-shadow .2s ease,
+    opacity .24s var(--ease-out),
+    transform .28s var(--ease-out),
+    filter .18s var(--ease-soft),
+    box-shadow .22s var(--ease-soft),
     visibility 0s linear 0s;
 }
 .composer-mic:hover, .composer-send:hover { filter: brightness(1.08); }
 .composer-actions[data-active="mic"] .composer-mic:active,
 .composer-actions[data-active="send"] .composer-send:active {
   transform: scale(0.94);
-  transition: transform .12s var(--ease-out);
+  transition: transform .14s var(--ease-out);
 }
 /* keyboard focus ring on the active button only — the inactive one is
    tabindex=-1 + aria-hidden, so it shouldn't show focus state. */
@@ -1149,20 +1188,41 @@
     0 6px 18px color-mix(in srgb, var(--primary-pill) 50%, transparent);
 }
 
-/* clipboard icon badge */
-.icon-btn { position: relative; }
+/* clipboard icon badge — refined count pill */
 .icon-btn-badge {
-  position: absolute; top: 4px; right: 4px;
-  min-width: 16px; height: 16px; padding: 0 4px;
+  position: absolute; top: -5px; right: -5px;
+  min-width: 20px; height: 20px; padding: 0 6px;
   border-radius: 999px;
   background: var(--accent);
   color: #0a1a14;
-  font-size: 10px; font-weight: 700;
-  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center;
   font-family: 'Geist Mono', monospace;
   letter-spacing: -0.02em;
+  box-shadow:
+    0 0 0 2.5px var(--surface-soft),
+    0 4px 12px color-mix(in srgb, var(--accent) 38%, transparent),
+    0 1px 2px rgba(0,0,0,0.35);
+  transform-origin: center;
+  animation: badgePop .42s var(--ease-out) backwards;
+  pointer-events: none;
+}
+.icon-btn:hover .icon-btn-badge {
+  box-shadow:
+    0 0 0 2.5px var(--surface-soft-hover),
+    0 4px 14px color-mix(in srgb, var(--accent) 50%, transparent),
+    0 1px 2px rgba(0,0,0,0.35);
 }
 .theme-indigo .icon-btn-badge { color: #fff; }
+@keyframes badgePop {
+  0%   { opacity: 0; transform: scale(0.55); }
+  60%  { opacity: 1; transform: scale(1.08); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .icon-btn-badge { animation: none; }
+  .icon-btn { transition: none; }
+}
 
 /* ─── MENU screen ─── */
 .menu-area {
@@ -1188,7 +1248,7 @@
   background-size: cover; background-position: center;
   display: flex; flex-direction: column; justify-content: flex-end;
   box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08), 0 16px 34px rgba(0,0,0,0.42);
-  animation: cardIn .45s var(--ease-out) backwards;
+  animation: cardIn .46s var(--ease-out) 40ms backwards;
 }
 .menu-hero-shade {
   position: absolute; inset: 0;
@@ -1248,7 +1308,7 @@
   gap: 14px;
   padding: 12px 0;
   border-bottom: 1px solid var(--card-border);
-  animation: bubbleIn .4s var(--ease-out) backwards;
+  animation: bubbleIn .42s var(--ease-out) backwards;
 }
 .menu-row:last-child { border-bottom: none; }
 
@@ -1294,10 +1354,14 @@
   width: 40px; height: 40px; border-radius: 999px;
   background: var(--surface-soft); color: var(--ink);
   display: flex; align-items: center; justify-content: center;
-  transition: transform .12s var(--ease-out), background .18s ease, border-color .18s ease, color .18s ease;
+  transition:
+    transform .16s var(--ease-out),
+    background .22s var(--ease-soft),
+    border-color .22s var(--ease-soft),
+    color .22s var(--ease-soft);
 }
-.menu-add:hover { background: var(--primary-pill); color: var(--primary-pill-ink); border-color: transparent; }
-.menu-add:active { transform: scale(0.9); }
+.menu-add:hover { background: var(--primary-pill); color: var(--primary-pill-ink); border-color: transparent; transform: translateY(-1px); }
+.menu-add:active { transform: scale(0.92); }
 
 .menu-stepper {
   flex-shrink: 0;
@@ -1306,10 +1370,10 @@
   border: 1px solid var(--card-border);
   border-radius: 999px;
   padding: 3px;
-  animation: stepperIn .22s var(--ease-out) backwards;
+  animation: stepperIn .26s var(--ease-out) backwards;
 }
 @keyframes stepperIn {
-  from { opacity: 0; transform: scale(0.9); }
+  from { opacity: 0; transform: scale(0.92); }
   to   { opacity: 1; transform: scale(1); }
 }
 .step-btn {
@@ -1318,7 +1382,7 @@
   background: transparent; color: var(--ink);
   font-size: 18px; font-weight: 500;
   display: flex; align-items: center; justify-content: center;
-  transition: background .15s ease, transform .1s ease;
+  transition: background .2s var(--ease-soft), transform .14s var(--ease-out);
 }
 .step-btn:hover { background: var(--surface-soft-hover); }
 .step-btn:active { transform: scale(0.9); }
@@ -1343,13 +1407,14 @@
   box-shadow: 0 14px 32px rgba(8,77,62,0.5), 0 0 0 0.5px rgba(255,255,255,0.1);
   font-family: inherit;
   z-index: 50;
-  animation: cartBarIn .35s var(--ease-out) backwards;
-  transition: transform .14s var(--ease-out), filter .15s ease;
+  animation: cartBarIn .42s var(--ease-out) backwards;
+  transition: transform .18s var(--ease-out), filter .2s var(--ease-soft);
+  will-change: transform;
 }
 .cart-bar:active { transform: scale(0.98); }
-.cart-bar:hover { filter: brightness(1.08); }
+.cart-bar:hover { filter: brightness(1.08); transform: translateY(-1px); }
 @keyframes cartBarIn {
-  from { opacity: 0; transform: translateY(20px); }
+  from { opacity: 0; transform: translateY(16px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 .cart-bar-badge {
@@ -1381,6 +1446,16 @@
 .confirm-pad { padding-top: 6px; gap: 18px; }
 .confirm-pad .store-card { margin-top: auto; }
 .confirm-pad .pay-confirm { margin-bottom: auto; }
+/* Block the agent-host's top-centred emerald radial (line 43) — its widest
+   contour passes through the card's vertical centre and the card's translucent
+   var(--card) + backdrop-filter saturate(150%) was amplifying it as a luminous
+   stripe down the cart lines. Layer an opaque themed base under the white wash. */
+.confirm-pad .store-card {
+  background-color: #14171a;
+  background-image: linear-gradient(var(--card), var(--card));
+}
+.theme-indigo .confirm-pad .store-card { background-color: #0a0820; }
+.theme-lily   .confirm-pad .store-card { background-color: #ece5cf; }
 .cart-lines { list-style: none; margin: 0; padding: 0; }
 .cart-line {
   display: flex; align-items: center; gap: 10px;
@@ -1454,7 +1529,7 @@
   position: relative;
   flex: 1;
   appearance: none; border: none; background: transparent;
-  height: 36px;
+  height: 40px;
   display: flex; align-items: center; justify-content: center; gap: 6px;
   color: var(--sub);
   font-family: inherit;
@@ -1462,7 +1537,7 @@
   letter-spacing: -0.005em;
   cursor: pointer;
   z-index: 2;
-  transition: color .2s ease;
+  transition: color .22s var(--ease-soft);
 }
 .orders-tab.is-active { color: var(--ink); }
 .orders-tab-count {
@@ -1482,7 +1557,8 @@
   background: rgba(255,255,255,0.12);
   border-radius: 10px;
   z-index: 1;
-  transition: transform .25s cubic-bezier(0.3, 0, 0.2, 1);
+  transition: transform .32s var(--ease-out);
+  will-change: transform;
 }
 .theme-lily .orders-tab-rail { background: rgba(15,31,6,0.08); }
 
@@ -1496,7 +1572,7 @@
   border: 1px solid var(--card-border);
   border-radius: 18px;
   padding: 12px;
-  animation: bubbleIn .4s var(--ease-out) backwards;
+  animation: bubbleIn .42s var(--ease-out) backwards;
 }
 .order-thumb {
   width: 62px; height: 62px; border-radius: 14px;
@@ -2451,14 +2527,15 @@
 .quick-chips {
   display: flex; align-items: center;
   gap: 8px;
-  padding: 6px 18px 6px;
+  /* 14px inset matches the composer + bottom-tabs column */
+  padding: 6px 14px 6px;
   overflow-x: auto;
   overflow-y: hidden;
   overscroll-behavior-x: contain;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
   scroll-snap-type: x proximity;
-  scroll-padding-left: 18px;
+  scroll-padding-left: 14px;
   /* mask the scroll-clipped right edge into a soft fade so it reads as
      "more to scroll" instead of an abrupt cut. left edge is transparent
      through the padding region so chips that scroll off fade out cleanly
@@ -2490,7 +2567,10 @@
    (left-aligned, like a quick reply) that reveals the full strip on tap. No
    top border, so it sits inside the chat instead of being fenced off from it. */
 .quick-chips-more-row {
-  padding: 12px 18px 4px;
+  /* horizontal inset (14px) matches the composer + bottom-tabs so the
+     "+ order something else" pill, the composer, and the tab-bar pill all
+     share the same left edge */
+  padding: 12px 14px 4px;
   margin-top: 2px;
   display: flex;
 }
@@ -2498,7 +2578,7 @@
   appearance: none;
   cursor: pointer;
   display: inline-flex; align-items: center; gap: 7px;
-  min-height: 38px;
+  min-height: 40px;
   padding: 0 15px;
   border-radius: 999px;
   background: var(--surface-soft);
@@ -2509,16 +2589,16 @@
   letter-spacing: -0.005em;
   line-height: 1;
   transition:
-    color .18s ease,
-    background .18s ease,
-    border-color .18s ease,
-    transform .14s var(--ease-out);
+    color .22s var(--ease-soft),
+    background .22s var(--ease-soft),
+    border-color .22s var(--ease-soft),
+    transform .18s var(--ease-out);
   -webkit-tap-highlight-color: transparent;
 }
 .quick-chip-add > span:first-child {
   font-size: 16px; line-height: 0;
   color: var(--accent);
-  transition: transform .2s var(--ease-out);
+  transition: transform .24s var(--ease-out);
 }
 .quick-chip-add:hover {
   color: var(--ink);
@@ -2552,10 +2632,10 @@
   line-height: 1;
   white-space: nowrap;
   transition:
-    transform .16s var(--ease-out),
-    background .18s ease,
-    border-color .18s ease,
-    box-shadow .18s ease;
+    transform .2s var(--ease-out),
+    background .22s var(--ease-soft),
+    border-color .22s var(--ease-soft),
+    box-shadow .22s var(--ease-soft);
   animation: chipIn .42s var(--ease-out) backwards;
   will-change: transform;
   -webkit-tap-highlight-color: transparent;
@@ -2629,12 +2709,14 @@
 @media (prefers-reduced-motion: reduce) {
   .pay-bio-inner { animation: none !important; }
   .menu-stepper,
-  .store-card, .browse-card, .order-card, .menu-row, .menu-hero, .cart-bar, .pay-confirm {
+  .store-card, .browse-card, .order-card, .menu-row, .menu-hero, .cart-bar, .pay-confirm,
+  .chat-area, .browse-area, .menu-area, .orders-area, .screen-pad {
     animation-duration: .22s !important;
     animation-delay: 0s !important;
     animation-name: greetFadeOnly !important;
   }
   .order-suggest:hover .os-go,
   .quick-chip-add:hover > span:first-child { transform: none; }
+  .menu-add:hover, .browse-card:hover, .cart-bar:hover { transform: none; }
   .menu-add:active, .step-btn:active, .pay-bio:active .pay-bio-inner { transform: none; }
 }

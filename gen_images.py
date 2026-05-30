@@ -40,8 +40,52 @@ PROMPTS = {
     "groceries": "A fresh premium grocery haul arranged on dark wood — organic produce, farm eggs, a sourdough loaf, avocados and bottled milk.",
 }
 
+# Per-store hero shots. Each prompt depicts that store's signature item with a
+# distinct angle / plating / props so the 3 stores per category never look cloned.
+STORE_PROMPTS = {
+    # --- pizza ---
+    "pizza-joes": "A huge New York-style pepperoni pizza slice held up from a whole pie, grease glistening, curled pepperoni cups, stringy melted mozzarella, top-down 3/4 angle on a dark steel pizza pan with a worn wooden peel behind.",
+    "pizza-tonys": "A whole Margherita pizza with charred leopard-spotted crust from a brick oven, torn fresh basil leaves, milky buffalo mozzarella pools and a drizzle of olive oil, shot top-down on a dark cast-iron tray with scattered basil and a small bowl of sea salt.",
+    "pizza-crust": "A single melty cheese pizza slice on a stacked pair of crinkled paper plates beside a frosty cola can, classic combo styling, side three-quarter angle on a dark diner counter, cheese pull mid-air.",
 
-def gen(key, cat, prompt):
+    # --- sushi ---
+    "sushi-tokyo": "A precise salmon-avocado roll set arranged in a curved line on a long dark slate plate, glossy salmon, bright green avocado, pickled ginger rosette and a small mound of wasabi, chopsticks resting on a black ceramic rest, overhead shot.",
+    "sushi-edomae": "An 8-piece omakase nigiri selection on a polished dark wood board — toro, salmon, uni gunkan, scallop with yuzu zest, ikura, eel with brushed tare — soft glints on each piece, intimate close-up angle.",
+    "sushi-wabi": "A spicy tuna roll with a fiery sriracha-mayo drizzle and scattered tobiko, plated next to a small dark bowl of steaming miso soup with floating wakame and tofu cubes, side angle on dark stone, moody steam.",
+
+    # --- coffee ---
+    "coffee-beanlab": "A tall iced oat-milk latte in a clear glass, distinct espresso and oat-milk layers with a swirl of crema melting into the ice, condensation droplets, on a dark concrete cafe counter beside a brass tamper and scattered roasted beans.",
+    "coffee-verve": "A perfect cortado in a small heavy glass cup with caramel crema and tight latte-art heart, paired with a single almond biscotti on a dark ceramic saucer, overhead flat-lay on a dark walnut tabletop.",
+    "coffee-daydream": "A maple cold brew in a stout amber glass jar with a slow swirl of pure maple syrup dissolving into the dark coffee, a single ice sphere and a thin twig of cinnamon resting on top, side macro angle on dark slate.",
+
+    # --- ride (luxury black EV / neon night, no food) ---
+    "ride-solana": "A sleek black luxury electric sedan parked on a rain-slicked downtown street at night, glowing emerald and magenta neon reflections streaking across the wet paintwork and asphalt, low front three-quarter cinematic angle.",
+    "ride-metrolift": "A clean black premium ride-share crossover EV waiting at a softly lit night curb, two interior passenger silhouette outlines barely visible through tinted rear windows, warm street-lamp glow, side-on cinematic shot on a wet city street.",
+    "ride-ridenow": "A blacked-out luxury SUV with chrome accents idling under a concrete overpass at night, headlights cutting through faint mist, deep gloss paint, dramatic low rear three-quarter hero angle, cinematic dark mood.",
+
+    # --- groceries ---
+    "groceries-freshcart": "A tight composition of a carton of farm-fresh brown eggs (one cracked open beside it), a bottle of cold whole milk and a rustic sourdough boule with a flour-dusted ear, arranged on a dark oak board, overhead flat-lay.",
+    "groceries-greenbasket": "An open woven dark wicker basket overflowing with organic produce — heirloom tomatoes, rainbow carrots with greens, a bunch of kale, a fennel bulb and lemons — on a dark linen cloth, soft side light, slight three-quarter angle.",
+    "groceries-cornermart": "A neat essentials bundle on dark stone — a small loaf of bread, a glass bottle of milk, a wedge of cheddar, a paper bag of pasta, two apples and a roll of butter — clean grid-like flat-lay, paper-bag textures.",
+
+    # --- burger ---
+    "burger-smash": "A double smash burger with two crispy lacy-edged patties, melted American cheese cascading over the sides, pickles peeking out, a soft potato bun pressed slightly, served on dark parchment with a generous pile of golden shoestring fries, side hero angle.",
+    "burger-bros": "A towering bacon cheeseburger combo — thick beef patty, crispy bacon strips, melted cheddar, lettuce and tomato in a glossy brioche bun — beside a paper cup of cola and onion rings, on a dark diner tray, three-quarter angle.",
+    "burger-char": "A refined wagyu burger with marbled patty, a dark glossy bun stamped with a faint sear, a swipe of truffle aioli and shaved black truffle on top, plated on a dark slate slab beside a tiny ramekin of aioli, intimate close-up.",
+
+    # --- chinese ---
+    "chinese-dragon": "A dark ceramic plate of glossy beef chow fun wide rice noodles with charred wok-hei edges, scallions and bean sprouts, chopsticks lifting strands mid-air, a side basket of golden crispy spring rolls with a dipping sauce, gentle steam.",
+    "chinese-sichuan": "A dark stone bowl of fiery mapo tofu — silken tofu cubes in glossy red chili-oil sauce flecked with Sichuan peppercorns and minced beef, scallions on top — beside a smaller bowl of fluffy jasmine rice, overhead angle, glistening surface.",
+    "chinese-lucky": "A classic orange chicken combo — crispy battered chicken pieces in glossy candied orange sauce with sesame seeds and orange zest curls, served over a mound of steamed white rice in a black takeout-style bowl, three-quarter angle.",
+
+    # --- dessert ---
+    "dessert-sugarlab": "A stack of three thick brown-butter chocolate-chunk cookies with crackled tops, gooey molten chocolate puddles, flaky sea-salt flakes on top, one cookie broken open showing a soft chewy center, dark wood backdrop, intimate macro shot.",
+    "dessert-frost": "A perfect swirl of black-sesame soft-serve in a dark waffle cone, glossy charcoal-grey ice cream with visible sesame speckles, a single edible gold flake on the peak, held against a dark gradient background, low side angle.",
+    "dessert-madeleine": "An elegant tiramisu slice with neat espresso-soaked ladyfinger layers, mascarpone cream and a heavy cocoa dust, on a small dark ceramic plate beside a tiny espresso cup with crema and a silver spoon, three-quarter angle, patisserie styling.",
+}
+
+
+def gen(key, prompt, dest):
     body = json.dumps({
         "model": MODEL,
         "prompt": prompt + SUFFIX,
@@ -55,7 +99,6 @@ def gen(key, cat, prompt):
     with urllib.request.urlopen(req, timeout=180) as r:
         data = json.loads(r.read().decode("utf-8", "replace"))
     b64 = data["data"][0]["b64_json"]
-    dest = os.path.join(OUT, "cat-%s.png" % cat)
     with open(dest, "wb") as f:
         f.write(base64.b64decode(b64))
     return dest
@@ -69,24 +112,36 @@ def main():
     os.makedirs(OUT, exist_ok=True)
     print("model=%s size=%s quality=%s -> %s" % (MODEL, SIZE, QUALITY, OUT))
     ok, fail = 0, 0
-    for cat, prompt in PROMPTS.items():
-        dest = os.path.join(OUT, "cat-%s.png" % cat)
+
+    def run(label, dest, prompt):
         if os.path.exists(dest) and os.path.getsize(dest) > 1000:
-            print("skip  %-10s (exists)" % cat)
-            ok += 1
-            continue
+            print("skip  %-26s (exists)" % label)
+            return 1, 0
         t0 = time.time()
         try:
-            gen(key, cat, prompt)
-            print("ok    %-10s %.1fs" % (cat, time.time() - t0))
-            ok += 1
+            gen(key, prompt, dest)
+            print("ok    %-26s %.1fs" % (label, time.time() - t0))
+            return 1, 0
         except urllib.error.HTTPError as e:
             detail = e.read().decode("utf-8", "replace")[:500]
-            print("FAIL  %-10s HTTP %s: %s" % (cat, e.code, detail), file=sys.stderr)
-            fail += 1
+            print("FAIL  %-26s HTTP %s: %s" % (label, e.code, detail), file=sys.stderr)
+            return 0, 1
         except Exception as e:  # noqa: BLE001
-            print("FAIL  %-10s %s" % (cat, e), file=sys.stderr)
-            fail += 1
+            print("FAIL  %-26s %s" % (label, e), file=sys.stderr)
+            return 0, 1
+
+    print("-- categories --")
+    for cat, prompt in PROMPTS.items():
+        dest = os.path.join(OUT, "cat-%s.png" % cat)
+        o, f = run("cat-" + cat, dest, prompt)
+        ok += o; fail += f
+
+    print("-- stores --")
+    for slug, prompt in STORE_PROMPTS.items():
+        dest = os.path.join(OUT, "store-%s.png" % slug)
+        o, f = run("store-" + slug, dest, prompt)
+        ok += o; fail += f
+
     print("done: %d ok, %d failed" % (ok, fail))
     sys.exit(0 if fail == 0 else 2)
 

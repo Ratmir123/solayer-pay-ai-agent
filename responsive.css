@@ -1,0 +1,90 @@
+/* ════════════════════════════════════════════════════════════
+   responsive.css — real-phone fullscreen layer (loaded LAST in <head>,
+   so it wins the cascade over agent.css and the inline <style>).
+
+   Desktop (> 820px): the <IOSDevice> mockup frame stays for presentation.
+   Phone   (≤ 820px): the app fills the whole screen edge-to-edge with real
+   device safe-area insets — NO fake status bar (9:41 / wifi / battery),
+   NO Dynamic Island notch, NO home indicator, NO titanium body.
+   The <IOSDevice> frame simply isn't rendered on phones (see app.jsx).
+   ════════════════════════════════════════════════════════════ */
+
+/* Fullscreen mount used instead of <IOSDevice> on phones. Fixed + inset:0
+   makes it own the viewport regardless of #root's desktop flex-centering. */
+.app-fullscreen {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100vh;       /* fallback */
+  height: 100dvh;      /* tracks the mobile browser's dynamic toolbars */
+  overflow: hidden;
+  z-index: 0;
+}
+.app-fullscreen .agent-mount { height: 100%; }
+.app-fullscreen .agent-host  { height: 100%; border-radius: 0; }
+
+/* ── Phone layout ───────────────────────────────────────────
+   Matches the JS handheld test: narrow screen OR a touch device with no
+   hover (real phones, incl. landscape phones wider than 820px). */
+@media (max-width: 820px), (hover: none) and (pointer: coarse) {
+  /* Stop the desktop centering/padding from letterboxing the app, and lock
+     page scroll so only the in-app screens scroll. */
+  html, body {
+    height: 100%;
+    height: 100dvh;
+    overflow: hidden;
+  }
+  body {
+    margin: 0;
+    padding: 0;
+    display: block;
+    align-items: stretch;
+    justify-content: flex-start;
+    min-height: 0;
+  }
+  #root {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  /* App chrome now respects the *real* device safe areas instead of the
+     mockup frame's fixed offsets (which were sized for the fake notch). */
+  .agent-header {
+    /* was 60px (cleared the fake Dynamic Island); now hug the real notch */
+    padding-top: max(env(safe-area-inset-top, 0px) + 14px, 20px);
+    padding-left: max(18px, env(safe-area-inset-left, 0px));
+    padding-right: max(18px, env(safe-area-inset-right, 0px));
+  }
+  .bottom-tabs {
+    /* was 28px bottom (cleared the fake home indicator); now the real one */
+    margin-bottom: max(env(safe-area-inset-bottom, 0px) + 10px, 14px);
+    margin-left: max(14px, env(safe-area-inset-left, 0px));
+    margin-right: max(14px, env(safe-area-inset-right, 0px));
+  }
+  /* keep the composer/footer column on the same safe horizontal inset */
+  .agent-footer {
+    padding-left: max(14px, env(safe-area-inset-left, 0px));
+    padding-right: max(14px, env(safe-area-inset-right, 0px));
+  }
+
+  /* Dev-only floating Tweaks panel would float over the real UI and break the
+     "shipped app" look on a phone — hide it. (Still available on desktop.) */
+  .twk-panel { display: none !important; }
+
+  /* The mic-permission hint banner sits at the very top; clear the real notch. */
+  .mic-hint { top: max(env(safe-area-inset-top, 0px) + 8px, 12px); }
+}
+
+/* ── Small phones (≤ 360px) — keep fixed-size elements from clipping ── */
+@media (max-width: 360px) {
+  .agent-header { padding-left: 14px; padding-right: 14px; }
+  .agent-header .header-title { font-size: 18px; }
+}
+
+/* ── Landscape phones — shorten the big top offset so content fits ── */
+@media (max-height: 480px) and (orientation: landscape) and (hover: none) and (pointer: coarse) {
+  .agent-header { padding-top: max(env(safe-area-inset-top, 0px) + 8px, 12px); }
+  .bottom-tabs  { margin-bottom: max(env(safe-area-inset-bottom, 0px) + 6px, 10px);
+                  margin-top: 4px; }
+}

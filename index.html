@@ -2,7 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <!-- treat as a real fullscreen app on phones (home-screen / standalone) -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Solayer Pay" />
+  <meta name="theme-color" content="#050606" />
   <title>Solayer Pay — Frog Voice Agent</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -68,6 +74,8 @@
     }
     .mic-hint.on { opacity: 1; }
   </style>
+  <!-- responsive layer (loaded last so it wins): fullscreen native on phones -->
+  <link href="responsive.css" rel="stylesheet">
 </head>
 <body>
   <div id="root"></div>

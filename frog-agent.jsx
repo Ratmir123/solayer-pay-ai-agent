@@ -87,46 +87,49 @@ const CATEGORIES = [
 
 const STORES = {
   pizza: [
-  { name: "Joe's Slice Shop", item: 'Large pepperoni pizza', price: 18.50, eta: '18 min', dist: '0.4 mi', rating: 4.7, swatch: '#c2410c' },
-  { name: "Tony's Brick Oven", item: 'Margherita, fresh basil', price: 24.00, eta: '32 min', dist: '0.8 mi', rating: 4.9, swatch: '#7c2d12' },
-  { name: 'Crust & Co.', item: 'Cheese slice combo', price: 14.50, eta: '14 min', dist: '0.3 mi', rating: 4.5, swatch: '#dc6803' }],
+  { name: "Joe's Slice Shop", item: 'Large pepperoni pizza', price: 18.50, eta: '18 min', dist: '0.4 mi', rating: 4.7, swatch: '#c2410c', img: 'store-pizza-joes' },
+  { name: "Tony's Brick Oven", item: 'Margherita, fresh basil', price: 24.00, eta: '32 min', dist: '0.8 mi', rating: 4.9, swatch: '#7c2d12', img: 'store-pizza-tonys' },
+  { name: 'Crust & Co.', item: 'Cheese slice combo', price: 14.50, eta: '14 min', dist: '0.3 mi', rating: 4.5, swatch: '#dc6803', img: 'store-pizza-crust' }],
 
   sushi: [
-  { name: 'Tokyo Sushi', item: 'Salmon avocado roll set', price: 24.00, eta: '32 min', dist: '0.7 mi', rating: 4.8, swatch: '#0e7490' },
-  { name: 'Edomae House', item: 'Omakase 8 piece', price: 38.00, eta: '40 min', dist: '1.1 mi', rating: 4.9, swatch: '#155e75' },
-  { name: 'Wabi Roll', item: 'Spicy tuna + miso', price: 19.50, eta: '24 min', dist: '0.5 mi', rating: 4.6, swatch: '#0891b2' }],
+  { name: 'Tokyo Sushi', item: 'Salmon avocado roll set', price: 24.00, eta: '32 min', dist: '0.7 mi', rating: 4.8, swatch: '#0e7490', img: 'store-sushi-tokyo' },
+  { name: 'Edomae House', item: 'Omakase 8 piece', price: 38.00, eta: '40 min', dist: '1.1 mi', rating: 4.9, swatch: '#155e75', img: 'store-sushi-edomae' },
+  { name: 'Wabi Roll', item: 'Spicy tuna + miso', price: 19.50, eta: '24 min', dist: '0.5 mi', rating: 4.6, swatch: '#0891b2', img: 'store-sushi-wabi' }],
 
   coffee: [
-  { name: 'Bean Lab', item: 'Iced oat latte, 16 oz', price: 6.50, eta: '9 min', dist: '0.2 mi', rating: 4.7, swatch: '#78350f' },
-  { name: 'Verve', item: 'Cortado + biscotti', price: 8.20, eta: '12 min', dist: '0.4 mi', rating: 4.8, swatch: '#92400e' },
-  { name: 'Daydream Coffee', item: 'Maple cold brew', price: 7.00, eta: '10 min', dist: '0.3 mi', rating: 4.6, swatch: '#b45309' }],
+  { name: 'Bean Lab', item: 'Iced oat latte, 16 oz', price: 6.50, eta: '9 min', dist: '0.2 mi', rating: 4.7, swatch: '#78350f', img: 'store-coffee-beanlab' },
+  { name: 'Verve', item: 'Cortado + biscotti', price: 8.20, eta: '12 min', dist: '0.4 mi', rating: 4.8, swatch: '#92400e', img: 'store-coffee-verve' },
+  { name: 'Daydream Coffee', item: 'Maple cold brew', price: 7.00, eta: '10 min', dist: '0.3 mi', rating: 4.6, swatch: '#b45309', img: 'store-coffee-daydream' }],
 
   ride: [
-  { name: 'Solana Wheels', item: 'Ride to Mission St', price: 12.40, eta: '4 min', dist: '0.1 mi', rating: 4.9, swatch: '#1e40af' },
-  { name: 'MetroLift', item: 'Shared ride · 2 stops', price: 8.80, eta: '7 min', dist: '0.2 mi', rating: 4.6, swatch: '#1d4ed8' },
-  { name: 'RideNow', item: 'Premium SUV', price: 22.00, eta: '5 min', dist: '0.1 mi', rating: 4.8, swatch: '#1e3a8a' }],
+  { name: 'Solana Wheels', item: 'Ride to Mission St', price: 12.40, eta: '4 min', dist: '0.1 mi', rating: 4.9, swatch: '#1e40af', img: 'store-ride-solana' },
+  { name: 'MetroLift', item: 'Shared ride · 2 stops', price: 8.80, eta: '7 min', dist: '0.2 mi', rating: 4.6, swatch: '#1d4ed8', img: 'store-ride-metrolift' },
+  { name: 'RideNow', item: 'Premium SUV', price: 22.00, eta: '5 min', dist: '0.1 mi', rating: 4.8, swatch: '#1e3a8a', img: 'store-ride-ridenow' }],
 
   groceries: [
-  { name: 'FreshCart', item: 'Eggs, milk, sourdough', price: 14.20, eta: '25 min', dist: '0.5 mi', rating: 4.5, swatch: '#15803d' },
-  { name: 'GreenBasket', item: 'Organic produce box', price: 28.00, eta: '40 min', dist: '0.9 mi', rating: 4.7, swatch: '#166534' },
-  { name: 'CornerMart', item: 'Essentials bundle', price: 12.50, eta: '20 min', dist: '0.3 mi', rating: 4.3, swatch: '#14532d' }],
+  { name: 'FreshCart', item: 'Eggs, milk, sourdough', price: 14.20, eta: '25 min', dist: '0.5 mi', rating: 4.5, swatch: '#15803d', img: 'store-groceries-freshcart' },
+  { name: 'GreenBasket', item: 'Organic produce box', price: 28.00, eta: '40 min', dist: '0.9 mi', rating: 4.7, swatch: '#166534', img: 'store-groceries-greenbasket' },
+  { name: 'CornerMart', item: 'Essentials bundle', price: 12.50, eta: '20 min', dist: '0.3 mi', rating: 4.3, swatch: '#14532d', img: 'store-groceries-cornermart' }],
 
   burger: [
-  { name: 'Smash House', item: 'Double smash + fries', price: 16.50, eta: '20 min', dist: '0.5 mi', rating: 4.8, swatch: '#9a3412' },
-  { name: 'Burger Bros.', item: 'Bacon cheeseburger combo', price: 14.20, eta: '16 min', dist: '0.3 mi', rating: 4.6, swatch: '#7c2d12' },
-  { name: 'Char & Co.', item: 'Wagyu burger, truffle aioli', price: 22.00, eta: '28 min', dist: '0.8 mi', rating: 4.9, swatch: '#92400e' }],
+  { name: 'Smash House', item: 'Double smash + fries', price: 16.50, eta: '20 min', dist: '0.5 mi', rating: 4.8, swatch: '#9a3412', img: 'store-burger-smash' },
+  { name: 'Burger Bros.', item: 'Bacon cheeseburger combo', price: 14.20, eta: '16 min', dist: '0.3 mi', rating: 4.6, swatch: '#7c2d12', img: 'store-burger-bros' },
+  { name: 'Char & Co.', item: 'Wagyu burger, truffle aioli', price: 22.00, eta: '28 min', dist: '0.8 mi', rating: 4.9, swatch: '#92400e', img: 'store-burger-char' }],
 
   chinese: [
-  { name: 'Dragon Noodle', item: 'Beef chow fun + spring rolls', price: 17.50, eta: '22 min', dist: '0.6 mi', rating: 4.7, swatch: '#a16207' },
-  { name: 'Sichuan Garden', item: 'Mapo tofu + jasmine rice', price: 15.00, eta: '26 min', dist: '0.7 mi', rating: 4.8, swatch: '#854d0e' },
-  { name: 'Lucky Wok', item: 'Orange chicken combo', price: 13.50, eta: '18 min', dist: '0.4 mi', rating: 4.5, swatch: '#713f12' }],
+  { name: 'Dragon Noodle', item: 'Beef chow fun + spring rolls', price: 17.50, eta: '22 min', dist: '0.6 mi', rating: 4.7, swatch: '#a16207', img: 'store-chinese-dragon' },
+  { name: 'Sichuan Garden', item: 'Mapo tofu + jasmine rice', price: 15.00, eta: '26 min', dist: '0.7 mi', rating: 4.8, swatch: '#854d0e', img: 'store-chinese-sichuan' },
+  { name: 'Lucky Wok', item: 'Orange chicken combo', price: 13.50, eta: '18 min', dist: '0.4 mi', rating: 4.5, swatch: '#713f12', img: 'store-chinese-lucky' }],
 
   dessert: [
-  { name: 'Sugar Lab', item: 'Brown butter cookies × 6', price: 12.00, eta: '20 min', dist: '0.4 mi', rating: 4.9, swatch: '#be185d' },
-  { name: 'Frost & Co.', item: 'Black sesame soft serve', price: 8.50, eta: '15 min', dist: '0.3 mi', rating: 4.8, swatch: '#9d174d' },
-  { name: 'Madeleine', item: 'Tiramisu slice + espresso', price: 11.00, eta: '24 min', dist: '0.6 mi', rating: 4.7, swatch: '#831843' }]
+  { name: 'Sugar Lab', item: 'Brown butter cookies × 6', price: 12.00, eta: '20 min', dist: '0.4 mi', rating: 4.9, swatch: '#be185d', img: 'store-dessert-sugarlab' },
+  { name: 'Frost & Co.', item: 'Black sesame soft serve', price: 8.50, eta: '15 min', dist: '0.3 mi', rating: 4.8, swatch: '#9d174d', img: 'store-dessert-frost' },
+  { name: 'Madeleine', item: 'Tiramisu slice + espresso', price: 11.00, eta: '24 min', dist: '0.6 mi', rating: 4.7, swatch: '#831843', img: 'store-dessert-madeleine' }]
 
 };
+
+// Pick the store-specific photo if present, else fall back to the category photo.
+const storeImg = (s, cat) => `images/${s && s.img ? s.img : 'cat-' + cat}.png`;
 
 // Menus — per-category menus (all stores in a category share the menu;
 // the store carries the "featured" line item for voice-flow shortcuts).
@@ -805,6 +808,7 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
         id: `o-${Date.now()}`,
         store: store?.name || 'Store',
         cat: intent,
+        img: store?.img || null,
         emoji: cat?.emoji || '🍴',
         swatch: store?.swatch || '#444',
         summary: cart.length === 1 ? cart[0].name : `${cart.reduce((n, l) => n + l.qty, 0)} items`,
@@ -871,7 +875,7 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
 
       {/* header — adapts to phase */}
       <header className="agent-header">
-        {phase === 'confirming' || phase === 'success' || phase === 'browse' || phase === 'menu' || phase === 'orders' ?
+        {phase === 'confirming' || phase === 'browse' || phase === 'menu' || phase === 'orders' ?
         <button className="icon-btn back-btn" onClick={() => {
           if (phase === 'menu') {setPhase('browse');setCart([]);} else
           if (phase === 'confirming') {setPhase(menu.length ? 'menu' : 'idle');} else
@@ -879,8 +883,8 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
         }} aria-label={phase === 'orders' ? 'back to chat' : 'back'}>
             <ChevLeft color={theme.ink} />
           </button> :
-        phase === 'wallet' || phase === 'account' ?
-        <div className="icon-btn" aria-hidden="true" style={{ width: 40, height: 40 }} /> :
+        phase === 'wallet' || phase === 'account' || phase === 'success' ?
+        <div className="icon-btn" aria-hidden="true" style={{ width: 44, height: 44, background: 'transparent', border: 'none' }} /> :
 
         <div className="header-id">
             <div className="avatar-wrap">
@@ -939,7 +943,7 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
                 onClick={() => acceptOrderCard(m.card)}
                 aria-label={`Review order from ${m.card.store.name}, $${m.card.item.price.toFixed(2)}`}>
                             <span className="os-thumb" aria-hidden="true"
-                  style={{ backgroundColor: m.card.store.swatch, backgroundImage: `url('images/cat-${m.card.cat}.png')` }} />
+                  style={{ backgroundColor: m.card.store.swatch, backgroundImage: `url('${storeImg(m.card.store, m.card.cat)}')` }} />
                             <span className="os-body">
                               <span className="os-store">{m.card.store.name}</span>
                               <span className="os-meta">{m.card.store.rating}★ · {m.card.store.eta} · {m.card.store.dist}</span>
@@ -1070,7 +1074,7 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
       <div className="screen-pad confirm-pad">
           <article className="store-card">
             <div className="store-card-hero"
-          style={{ backgroundColor: store.swatch, backgroundImage: `url('images/cat-${intent}.png')` }}>
+          style={{ backgroundColor: store.swatch, backgroundImage: `url('${storeImg(store, intent)}')` }}>
               <div className="store-card-hero-shade" aria-hidden="true" />
               <div className="store-card-hero-id">
                 <div className="store-name">{store.name}</div>
@@ -1658,7 +1662,7 @@ function BrowseScreen({ category, stores, onPick, accent }) {
         style={{ animationDelay: `${i * 70}ms` }}
         onClick={() => onPick(i)}>
             <div className="browse-img"
-          style={{ backgroundColor: s.swatch, backgroundImage: `url('images/cat-${category.key}.png')` }}>
+          style={{ backgroundColor: s.swatch, backgroundImage: `url('${storeImg(s, category.key)}')` }}>
               <div className="browse-img-shade" aria-hidden="true" />
               <div className="browse-img-tag">
                 <span className="dot" style={{ background: accent }} />
@@ -1705,7 +1709,7 @@ function MenuScreen({ theme, store, category, menu, qtyOf, onAdd, onDec, cart, c
       <div className="menu-scroll">
         {/* hero — real category photo with the store identity overlaid */}
         <div className="menu-hero"
-          style={{ backgroundColor: store.swatch, backgroundImage: `url('images/cat-${category.key}.png')` }}>
+          style={{ backgroundColor: store.swatch, backgroundImage: `url('${storeImg(store, category.key)}')` }}>
           <div className="menu-hero-shade" aria-hidden="true" />
           <div className="menu-hero-info">
             <div className="menu-hero-name">{store.name}</div>
@@ -1814,7 +1818,7 @@ function OrdersScreen({ theme, upcoming, past, onPick, onClose }) {
           {list.map((o) =>
         <li key={o.id} className="order-card">
               <div className="order-thumb"
-            style={{ backgroundColor: o.swatch, backgroundImage: o.cat ? `url('images/cat-${o.cat}.png')` : 'none' }}>
+            style={{ backgroundColor: o.swatch, backgroundImage: (o.img || o.cat) ? `url('${storeImg({ img: o.img }, o.cat)}')` : 'none' }}>
                 {!o.cat && <span className="order-emoji">{o.emoji}</span>}
               </div>
               <div className="order-body">
