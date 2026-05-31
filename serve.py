@@ -63,6 +63,10 @@ def build_multipart(boundary, audio_bytes, filename, file_ctype, model):
 
 
 class Handler(SimpleHTTPRequestHandler):
+    # Some Python builds lack a .webp mapping → it falls back to octet-stream.
+    # Declare it so WebP is served as a proper image type.
+    extensions_map = {**SimpleHTTPRequestHandler.extensions_map, ".webp": "image/webp"}
+
     def end_headers(self):
         self.send_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
         self.send_header("Pragma", "no-cache")

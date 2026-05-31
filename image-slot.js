@@ -214,7 +214,14 @@
     '  backdrop-filter:blur(6px)}' +
     '.ctl button:hover{background:rgba(0,0,0,.8)}' +
     '.err{position:absolute;left:8px;bottom:8px;right:8px;color:#b3261e;font-size:11px;' +
-    '  background:rgba(255,255,255,.85);padding:4px 6px;border-radius:5px;pointer-events:none}';
+    '  background:rgba(255,255,255,.85);padding:4px 6px;border-radius:5px;pointer-events:none}' +
+    // Calm reveal of the slot image once decoded — mirrors agent.css .img-fade
+    // so the slot does not "pop" when src lands. Duplicated locally because
+    // outer stylesheets do not pierce shadow DOM. Reduced-motion users skip it.
+    '.frame img.img-fade{opacity:0;transition:opacity 240ms cubic-bezier(0.22,1,0.36,1)}' +
+    '.frame img.img-fade.is-loaded{opacity:1}' +
+    '@media (prefers-reduced-motion: reduce){' +
+    '  .frame img.img-fade{opacity:1!important;transition:none!important}}';
 
   const icon =
     '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
@@ -235,7 +242,7 @@
       root.innerHTML =
         '<style>' + stylesheet + '</style>' +
         '<div class="frame" part="frame">' +
-        '  <img part="image" alt="" draggable="false" style="display:none">' +
+        '  <img class="img-fade" part="image" alt="" draggable="false" style="display:none">' +
         '  <div class="empty" part="empty">' + icon +
         '    <div class="cap"></div>' +
         '    <div class="sub">or <u>browse files</u></div></div>' +
@@ -283,7 +290,15 @@
       });
       // naturalWidth/Height aren't known until load — re-apply so the cover
       // baseline is computed from real dimensions, not the 100%×100% fallback.
-      this._img.addEventListener('load', () => this._applyView());
+      // Also flip the fade primitive on so a fresh src reveals calmly instead
+      // of popping; an error reveals too so a broken image never stays blank.
+      this._img.addEventListener('load', () => {
+        this._applyView();
+        this._img.classList.add('is-loaded');
+      });
+      this._img.addEventListener('error', () => {
+        this._img.classList.add('is-loaded');
+      });
       // Gated on editable + fit=cover so share links and contain/fill slots
       // stay static.
       this.addEventListener('dblclick', (e) => {
@@ -617,6 +632,10 @@
       // the display:flex / display:block rules in the stylesheet above.
       if (url) {
         if (this._img.getAttribute('src') !== url) {
+          // Re-arm the fade for the incoming src — the element is reused
+          // across swaps (replace / clear+drop), so without this the second
+          // image inherits the first's .is-loaded and pops in instantly.
+          this._img.classList.remove('is-loaded');
           this._img.src = url;
           this._ghost.src = url;
         }
@@ -628,6 +647,7 @@
       } else {
         this._img.style.display = 'none';
         this._img.removeAttribute('src');
+        this._img.classList.remove('is-loaded');
         this._ghost.removeAttribute('src');
         this._empty.style.display = 'flex';
         this.removeAttribute('data-filled');

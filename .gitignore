@@ -43,3 +43,7 @@ logs/
 
 # Large source asset — the app ships the generated .webp strips, not this
 mascot animation.mp4
+
+# Local backup of the original full-size PNGs (replaced by optimized .webp).
+# Redundant with git history, so no need to ship this ~80MB folder.
+_img-backup/

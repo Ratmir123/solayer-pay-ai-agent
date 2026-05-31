@@ -65,6 +65,13 @@
   .cardx-header {
     padding-top: max(env(safe-area-inset-top, 0px) + 14px, 20px);
   }
+  /* Account tab's app-header row is purely decorative here (empty placeholder +
+     a hidden orders button), so on a real phone it just leaves an empty band up
+     top — collapse it. Desktop keeps it (reads as status-bar spacing). */
+  .phase-account .agent-header { display: none; }
+  .account-area {
+    padding-top: max(env(safe-area-inset-top, 0px) + 10px, 16px);
+  }
   .card-scroll {
     padding-left: max(20px, env(safe-area-inset-left, 0px));
     padding-right: max(20px, env(safe-area-inset-right, 0px));

@@ -135,7 +135,7 @@ const STORES = {
 };
 
 // Pick the store-specific photo if present, else fall back to the category photo.
-const storeImg = (s, cat) => `images/${s && s.img ? s.img : 'cat-' + cat}.png`;
+const storeImg = (s, cat) => `images/${s && s.img ? s.img : 'cat-' + cat}.webp`;
 
 // Menus — per-category menus (all stores in a category share the menu;
 // the store carries the "featured" line item for voice-flow shortcuts).
@@ -533,6 +533,7 @@ function FrogAvatarSmall({ id = 'frog-avatar-sm', size = 36, animated = false })
   return (
     <img
       id={id}
+      className="img-fade"
       src="mascot.png"
       alt="Solayer mascot"
       style={{
@@ -961,7 +962,9 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
                 onClick={() => acceptOrderCard(m.card)}
                 aria-label={`Review order from ${m.card.store.name}, $${m.card.item.price.toFixed(2)}`}>
                             <span className="os-thumb" aria-hidden="true"
-                  style={{ backgroundColor: m.card.store.swatch, backgroundImage: `url('${storeImg(m.card.store, m.card.cat)}')` }} />
+                  style={{ backgroundColor: m.card.store.swatch }}>
+                              <img className="os-thumb-img img-fade" src={storeImg(m.card.store, m.card.cat)} alt="" aria-hidden="true" loading="lazy" decoding="async" draggable="false" />
+                            </span>
                             <span className="os-body">
                               <span className="os-store">{m.card.store.name}</span>
                               <span className="os-meta">{m.card.store.rating}★ · {m.card.store.eta} · {m.card.store.dist}</span>
@@ -1092,7 +1095,8 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
       <div className="screen-pad confirm-pad">
           <article className="store-card">
             <div className="store-card-hero"
-          style={{ backgroundColor: store.swatch, backgroundImage: `url('${storeImg(store, intent)}')` }}>
+          style={{ backgroundColor: store.swatch }}>
+              <img className="store-card-hero-img img-fade" src={storeImg(store, intent)} alt="" aria-hidden="true" loading="lazy" decoding="async" draggable="false" />
               <div className="store-card-hero-shade" aria-hidden="true" />
               <div className="store-card-hero-id">
                 <div className="store-name">{store.name}</div>
@@ -1105,8 +1109,9 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
             </div>
 
             <ul className="cart-lines">
-              {cart.map((l) =>
-            <li key={l.name} className="cart-line">
+              {cart.map((l, i) =>
+            <li key={l.name} className="cart-line"
+            style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}>
                   <span className="cart-line-qty">{l.qty}×</span>
                   <span className="cart-line-emoji">{l.emoji}</span>
                   <span className="cart-line-name">{l.name}</span>
@@ -1206,7 +1211,7 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
 // prefers-reduced-motion it's a static, freely-swipeable single row.
 // ─────────────────────────────────────────────────────────────
 // Category chip glyph. Prefers the generated glassy-emerald icon
-// (images/icon-<key>.png) and quietly falls back to the original emoji until
+// (images/icon-<key>.webp) and quietly falls back to the original emoji until
 // that asset exists — so the carousel keeps working before the background
 // generation finishes, then upgrades to the custom icons on next load.
 function CategoryIcon({ cat }) {
@@ -1216,9 +1221,9 @@ function CategoryIcon({ cat }) {
   }
   return (
     <img
-      className="quick-chip-icon"
-      src={`images/icon-${cat.key}.png`}
-      alt="" aria-hidden="true" draggable="false"
+      className="quick-chip-icon img-fade"
+      src={`images/icon-${cat.key}.webp`}
+      alt="" aria-hidden="true" loading="lazy" decoding="async" draggable="false"
       onError={() => setFailed(true)} />);
 
 }
@@ -1489,8 +1494,9 @@ function SuccessScreen({ theme, store, cart, total, onDone, onMore }) {
 
       <article className="receipt">
         <ul className="receipt-cart">
-          {cart.map((l) =>
-          <li key={l.name} className="receipt-cart-row">
+          {cart.map((l, i) =>
+          <li key={l.name} className="receipt-cart-row"
+          style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}>
               <span className="receipt-cart-qty">{l.qty}×</span>
               <span className="receipt-cart-name">{l.name}</span>
               <span className="receipt-cart-price">${(l.qty * l.price).toFixed(2)}</span>
@@ -1702,8 +1708,8 @@ function WalletScreen({ theme, orders }) {
 
         <div className="cardx-cards">
           <div className="cardx-card">
-            <img className="cardx-card-tex" src="fig-card-texture.png" alt="" aria-hidden="true" draggable="false" />
-            <img className="cardx-card-logo" src="fig-solayer-wordmark.svg" alt="solayer" draggable="false" />
+            <img className="cardx-card-tex img-fade" src="fig-card-texture.webp" alt="" aria-hidden="true" loading="lazy" decoding="async" draggable="false" />
+            <img className="cardx-card-logo img-fade" src="fig-solayer-wordmark.svg" alt="solayer" draggable="false" />
             <div className="cardx-card-num">
               <span className="cardx-card-dots" aria-hidden="true"><i /><i /><i /><i /></span>
               <span className="cardx-card-digits">8678</span>
@@ -1724,12 +1730,13 @@ function WalletScreen({ theme, orders }) {
             <PhCaretRight size={16} />
           </div>
           <ul className="cardx-tx-list">
-            {CARD_TX.map((t) =>
-            <li key={t.id} className="cardx-tx-row">
+            {CARD_TX.map((t, i) =>
+            <li key={t.id} className="cardx-tx-row"
+            style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}>
                 <div className="cardx-tx-info">
                   <span className="cardx-avatar">
                     {t.img ?
-                  <img src={t.img} alt="" /> :
+                  <img className="img-fade" src={t.img} alt="" /> :
                   <span className="cardx-avatar-letter">{t.letter}</span>}
                   </span>
                   <span className="cardx-tx-meta">
@@ -1777,7 +1784,7 @@ function AccountScreen({ theme }) {
     <div className="account-area">
       <section className="account-header-card">
         <div className="account-avatar">
-          <img id="account-avatar" src="mascot.png" alt="Solayer mascot"
+          <img id="account-avatar" className="img-fade" src="mascot.png" alt="Solayer mascot"
           style={{ width: '72px', height: '72px', display: 'block', objectFit: 'contain', objectPosition: 'center', borderRadius: 14, imageRendering: 'auto' }} />
           <span className="account-sparkle"><Sparkle color={theme.accent} size={14} /></span>
         </div>
@@ -1796,7 +1803,8 @@ function AccountScreen({ theme }) {
           <h3 className="section-title small">{g.group}</h3>
           <ul className="account-list">
             {g.rows.map((r, ri) =>
-          <li key={ri} className="account-row">
+          <li key={ri} className="account-row"
+          style={{ animationDelay: `${Math.min(ri, 8) * 40}ms` }}>
                 <span className="account-row-lbl">{r.lbl}</span>
                 <span className={`account-row-val ${r.accent ? 'accent' : ''}`}>{r.val} <span className="dim">›</span></span>
               </li>
@@ -1828,7 +1836,8 @@ function BrowseScreen({ category, stores, onPick, accent }) {
         style={{ animationDelay: `${i * 70}ms` }}
         onClick={() => onPick(i)}>
             <div className="browse-img"
-          style={{ backgroundColor: s.swatch, backgroundImage: `url('${storeImg(s, category.key)}')` }}>
+          style={{ backgroundColor: s.swatch }}>
+              <img className="browse-img-photo img-fade" src={storeImg(s, category.key)} alt="" aria-hidden="true" loading="lazy" decoding="async" draggable="false" />
               <div className="browse-img-shade" aria-hidden="true" />
               <div className="browse-img-tag">
                 <span className="dot" style={{ background: accent }} />
@@ -1875,7 +1884,8 @@ function MenuScreen({ theme, store, category, menu, qtyOf, onAdd, onDec, cart, c
       <div className="menu-scroll">
         {/* hero — real category photo with the store identity overlaid */}
         <div className="menu-hero"
-          style={{ backgroundColor: store.swatch, backgroundImage: `url('${storeImg(store, category.key)}')` }}>
+          style={{ backgroundColor: store.swatch }}>
+          <img className="menu-hero-img img-fade" src={storeImg(store, category.key)} alt="" aria-hidden="true" loading="lazy" decoding="async" draggable="false" />
           <div className="menu-hero-shade" aria-hidden="true" />
           <div className="menu-hero-info">
             <div className="menu-hero-name">{store.name}</div>
@@ -2008,7 +2018,9 @@ function LiveOrderCard({ o, index }) {
       <span className="order-live-glow" aria-hidden="true" />
       <div className="order-live-head">
         <div className="order-thumb order-thumb-lg"
-        style={{ backgroundColor: o.swatch, backgroundImage: (o.img || o.cat) ? `url('${storeImg({ img: o.img }, o.cat)}')` : 'none' }}>
+        style={{ backgroundColor: o.swatch }}>
+          {(o.img || o.cat) &&
+          <img className="order-thumb-img img-fade" src={storeImg({ img: o.img }, o.cat)} alt="" aria-hidden="true" loading="lazy" decoding="async" draggable="false" />}
           {!o.cat && !o.img && <span className="order-emoji">{o.emoji}</span>}
         </div>
         <div className="order-live-info">
@@ -2044,7 +2056,9 @@ function PastOrderCard({ o, index, onReorder }) {
   return (
     <li className="order-card order-past" style={{ animationDelay: `${index * 50}ms` }}>
       <div className="order-thumb"
-      style={{ backgroundColor: o.swatch, backgroundImage: (o.img || o.cat) ? `url('${storeImg({ img: o.img }, o.cat)}')` : 'none' }}>
+      style={{ backgroundColor: o.swatch }}>
+        {(o.img || o.cat) &&
+        <img className="order-thumb-img img-fade" src={storeImg({ img: o.img }, o.cat)} alt="" aria-hidden="true" loading="lazy" decoding="async" draggable="false" />}
         {!o.cat && !o.img && <span className="order-emoji">{o.emoji}</span>}
       </div>
       <div className="order-body">

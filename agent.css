@@ -2,17 +2,61 @@
    Dark canvas + teal accent (Figma "Green" mode), pixel-friendly type,
    expressive SVG frog, ordering flow screens (chat → confirm → pay → success). */
 
-/* Motion tokens (Emil Kowalski) — built-in easings are too weak. Entrances and
+/* Motion toolkit (Emil Kowalski) — built-in easings are too weak. Entrances and
    press feedback use --ease-out (fast start = reads instantly, long silky tail);
    on-screen movement uses --ease-in-out. --ease-soft is the workhorse for
    colour / background / border / shadow state changes so they breathe in and
-   out without abrupt starts/stops. Duration scale: ~180–240ms for small state
-   changes, ~300–420ms for entrances. */
+   out without abrupt starts/stops. --ease-spring adds a hint of overshoot for
+   playful entrances (cards arriving, sheets pushing in) — keep it for rare,
+   first-time moments, never for repeated interactions.
+
+   Duration scale (animate transform + opacity only, GPU-friendly):
+     --dur-fast  160ms  press feedback, tiny popovers
+     --dur       240ms  default entrance / state change
+     --dur-slow  360ms  sheets, screen transitions, modals
+   Anything > 400ms on a UI element is almost always a mistake. */
 :root {
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-soft: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-in-out: cubic-bezier(0.76, 0, 0.24, 1);
+  --ease-spring: cubic-bezier(0.34, 1.32, 0.46, 1);
+  /* aliases — keep existing names; these read clearer at call sites */
+  --ease-entrance: var(--ease-out);
+  --ease-state: var(--ease-soft);
+
+  --dur-fast: 160ms;
+  --dur: 240ms;
+  --dur-slow: 360ms;
 }
+
+/* Image fade-in primitive — pair with motion.js which toggles .is-loaded
+   when the underlying <img> has actually painted. Opt-in by adding the
+   class; with no class, images render exactly as before. */
+.img-fade {
+  opacity: 0;
+  transition: opacity var(--dur) var(--ease-out);
+}
+.img-fade.is-loaded { opacity: 1; }
+
+/* Photo layers behind composite hero / thumb chrome. These replace what used to
+   be `background-image` on the container so the photo can fade in via .img-fade
+   while the swatch / shade / text overlays stay instant. Position-only rules —
+   no visual change at rest versus the prior background-image setup. */
+.store-card-hero-img,
+.menu-hero-img,
+.browse-img-photo,
+.os-thumb-img,
+.order-thumb-img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover; object-position: center;
+  display: block;
+  pointer-events: none;
+  -webkit-user-select: none; user-select: none;
+}
+/* the card-texture layer lives at 0.15 opacity at rest — keep that final state
+   so the img-fade reveal lands on its designed intensity, not opaque. */
+.cardx-card-tex.img-fade.is-loaded { opacity: 0.15; }
 
 .agent-host {
   position: relative;
@@ -154,14 +198,18 @@
 .back-btn { background: var(--chip); }
 
 /* ─── unified screen entrance ───
-   Phase swap → wrappers mount and softly fade/rise in. transform+opacity only
-   so it's GPU-composited; .stage is intentionally excluded because the voice
-   orb owns its own (premium, intricate) entrance. */
-.chat-area, .browse-area, .menu-area, .orders-area, .screen-pad {
-  animation: screenIn .38s var(--ease-out) backwards;
+   Every phase/tab wrapper softly fades + rises in on mount so phase swaps
+   and bottom-nav tab switches share one consistent feel. transform+opacity
+   only (GPU-composited). `backwards` fill-mode keeps the element at its
+   resting (visible) state once the animation ends, so no screen can be
+   left invisible if the keyframes are skipped. .stage is intentionally
+   excluded because the voice orb owns its own intricate entrance. */
+.chat-area, .browse-area, .menu-area, .orders-area, .screen-pad,
+.card-screen, .account-area {
+  animation: screenIn var(--dur) var(--ease-out) backwards;
 }
 @keyframes screenIn {
-  from { opacity: 0; transform: translateY(6px); }
+  from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
@@ -843,7 +891,10 @@
 }
 
 /* ─── Success screen ─── */
-.success-screen { padding-top: 24px; align-items: center; }
+/* reserve the floating tab-bar dock height as bottom padding so the final
+   "order something else" button never slips under the Card/AI Order/Account bar
+   (this screen has no .agent-footer that would otherwise reserve --dock-h). */
+.success-screen { padding-top: 24px; padding-bottom: var(--dock-h); align-items: center; }
 .success-burst {
   position: relative;
   width: 110px; height: 110px;
@@ -1060,8 +1111,10 @@
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 42%, transparent);
 }
 .os-thumb {
+  position: relative;
   width: 46px; height: 46px; flex-shrink: 0;
   border-radius: 11px;
+  overflow: hidden;
   background-size: cover; background-position: center;
   box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
 }
@@ -1327,6 +1380,13 @@
     rgba(255,255,255,0.06) 0 10px, rgba(0,0,0,0.08) 10px 20px);
   mix-blend-mode: overlay;
 }
+/* dim + mute the brand-swatch plate so the emoji stops blending into it.
+   sits above the swatch/hatch (z-index 1) but below the emoji (z-index 2). */
+.menu-row-thumb::before {
+  content: ''; position: absolute; inset: 0; z-index: 1;
+  background: rgba(8, 9, 11, 0.6);
+  pointer-events: none;
+}
 .menu-row-emoji {
   font-size: 30px; line-height: 1;
   filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));
@@ -1464,6 +1524,7 @@
   padding: 10px 0;
   border-bottom: 1px dashed var(--card-border);
   font-size: 14px; color: var(--ink);
+  animation: bubbleIn .42s var(--ease-out) backwards;
 }
 .cart-line:last-child { border-bottom: none; }
 .cart-line-qty {
@@ -1504,6 +1565,7 @@
 .receipt-cart-row {
   display: grid; grid-template-columns: 28px 1fr auto; gap: 8px;
   font-size: 13px; color: var(--ink);
+  animation: bubbleIn .42s var(--ease-out) backwards;
 }
 .receipt-cart-qty { color: var(--sub); font-family: 'Geist Mono', monospace; }
 .receipt-cart-price { font-family: 'Geist Mono', monospace; color: var(--ink); }
@@ -1577,6 +1639,7 @@
   animation: bubbleIn .42s var(--ease-out) backwards;
 }
 .order-thumb {
+  position: relative;
   width: 62px; height: 62px; border-radius: 14px;
   flex-shrink: 0; align-self: flex-start;
   display: flex; align-items: center; justify-content: center;
@@ -1870,14 +1933,18 @@
 .theme-lily .bottom-tabs .tab { color: #0f1f06; }
 .theme-lily .bottom-tabs .tab.is-active { background: rgba(15,31,6,0.08); }
 
-/* AI tab logo (centered) — the Solayer emerald mark, always brand-green */
+/* AI tab logo (centered) — the Solayer emerald mark. Colored like the Card/
+   Account line icons (white when active, dimmed otherwise) via currentColor,
+   instead of always brand-green — keeps the mark's shape, drops the odd accent. */
 .tab-emerald {
   width: 28px; height: 28px;
   flex-shrink: 0;
-  background-color: var(--accent);
+  background-color: currentColor;
   -webkit-mask: url('Emerald Logo.png') center / 23px 23px no-repeat;
           mask: url('Emerald Logo.png') center / 23px 23px no-repeat;
 }
+.bottom-tabs .tab:not(.is-active) .tab-emerald { background-color: rgba(255,255,255,0.55); }
+.theme-lily .bottom-tabs .tab:not(.is-active) .tab-emerald { background-color: rgba(15,31,6,0.5); }
 /* Card + Account icons (Phosphor) — white when active, dimmed otherwise */
 .tab-line-icon {
   display: flex; align-items: center; justify-content: center;
@@ -1993,7 +2060,7 @@
 .cardx-tx-head { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; color: #717373; }
 .cardx-tx-title { font-size: 16px; font-weight: 500; color: #717373; letter-spacing: -0.005em; }
 .cardx-tx-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-.cardx-tx-row { display: flex; align-items: center; justify-content: space-between; height: 48px; gap: 8px; }
+.cardx-tx-row { display: flex; align-items: center; justify-content: space-between; height: 48px; gap: 8px; animation: bubbleIn .42s var(--ease-out) backwards; }
 .cardx-tx-info { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; padding-right: 8px; }
 .cardx-avatar {
   flex-shrink: 0; width: 40px; height: 40px; border-radius: 60px; overflow: hidden;
@@ -2183,6 +2250,7 @@
   font-size: 14px;
   transition: background .15s ease;
   cursor: pointer;
+  animation: bubbleIn .42s var(--ease-out) backwards;
 }
 .account-row:last-child { border-bottom: none; }
 .account-row:hover { background: rgba(255,255,255,0.04); }
@@ -3029,7 +3097,9 @@
   .pay-bio-inner { animation: none !important; }
   .menu-stepper,
   .store-card, .browse-card, .order-card, .menu-row, .menu-hero, .cart-bar, .pay-confirm,
-  .chat-area, .browse-area, .menu-area, .orders-area, .screen-pad {
+  .chat-area, .browse-area, .menu-area, .orders-area, .screen-pad,
+  .card-screen, .account-area,
+  .cart-line, .receipt-cart-row, .cardx-tx-row, .account-row {
     animation-duration: .22s !important;
     animation-delay: 0s !important;
     animation-name: greetFadeOnly !important;
@@ -3038,4 +3108,12 @@
   .quick-chip-add:hover > span:first-child { transform: none; }
   .menu-add:hover, .browse-card:hover, .cart-bar:hover { transform: none; }
   .menu-add:active, .step-btn:active, .pay-bio:active .pay-bio-inner { transform: none; }
+
+  /* image-fade primitive: skip the fade so nothing hides waiting for a load
+     event the user does not want to see anyway. */
+  .img-fade { opacity: 1 !important; transition: none !important; }
+
+  /* apple emoji <img> uses the same load-fade pattern; under reduced motion
+     show them instantly so a slow image can never sit invisible. */
+  .apple-emoji { opacity: 1 !important; transition: none !important; }
 }
