@@ -92,11 +92,16 @@
     }
     .loading-words__word {
       font-family: 'Satoshi', 'Geist', -apple-system, system-ui, sans-serif;
-      font-size: 4.5em; font-weight: 500; line-height: 1; margin: 0;
+      font-size: 4.05em; font-weight: 500; line-height: 1; margin: 0; /* intro word: 10% smaller */
       letter-spacing: -0.01em;
     }
     @media screen and (max-width: 767px) {
       .loading-words { font-size: 2.75vw; }
+    }
+    /* Desktop only: intro word shrunk 10% twice off the 4.05em mobile base
+       (3.2805em = 4.05 × 0.9 × 0.9). Mobile keeps 4.05em-on-2.75vw, untouched. */
+    @media screen and (min-width: 768px) {
+      .loading-words__word { font-size: 3.2805em; }
     }
   </style>
   <!-- responsive layer (loaded last so it wins): fullscreen native on phones -->
