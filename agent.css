@@ -322,14 +322,14 @@
   display: flex; align-items: center; justify-content: center;
   cursor: pointer; user-select: none;
   -webkit-tap-highlight-color: transparent;
-  /* press feedback: a soft, very smooth give from the CENTER — no bounce, no
-     overshoot, just a gentle ease in and back out so it feels calm and premium.
-     The slow-start/slow-end curve avoids the "punchy" feel of a fast ease-out.
-     Scale lives on this wrapper only, so the inner blobs, glow and edge beam keep
-     flowing straight through the press untouched. */
+  /* press feedback (Apple button feel): the orb gives INSTANTLY under the finger
+     (fast press-in, see .is-pressing) and recovers smoothly on release. That
+     asymmetry — quick down, gentle settle — is what makes a press feel tactile
+     and satisfying. No overshoot. Scale lives on this wrapper only, so the inner
+     blobs, glow and edge beam keep flowing straight through the press untouched. */
   transform: scale(1);
   transform-origin: center center;
-  transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);   /* release: smooth, no overshoot */
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);   /* release: smooth settle */
   will-change: transform;
   touch-action: manipulation;
 }
@@ -337,7 +337,7 @@
    overshoot above. Toggled by JS on pointerdown/up (see FrogAgent). */
 .blob-stack.is-pressing {
   transform: scale(0.94);
-  transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);   /* press-in: gentle + gradual, no punch */
+  transition: transform 0.12s ease-out;   /* press-in: fast + immediate, responds right under the finger */
 }
 @media (prefers-reduced-motion: reduce) {
   .blob-stack, .blob-stack.is-pressing { transition-duration: 0.01s; }
