@@ -69,7 +69,11 @@
      phone there's no fake status bar, so .account-area hugs the notch instead of
      carrying the desktop mockup's status-bar clearance. */
   .account-area {
+    /* Drop the whole Account section ~3% of the viewport on phones (per
+       request), on top of the notch clearance. First line is the fallback
+       for browsers without dvh; the second wins where dvh is supported. */
     padding-top: max(env(safe-area-inset-top, 0px) + 10px, 16px);
+    padding-top: calc(max(env(safe-area-inset-top, 0px) + 10px, 16px) + 3dvh);
   }
   .card-scroll {
     padding-left: max(20px, env(safe-area-inset-left, 0px));

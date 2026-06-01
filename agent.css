@@ -1834,6 +1834,9 @@
 /* The account layer rides on the app background (left untouched — no
    surface of its own), and drives its own vertical rhythm via margins. */
 .account-area.acct { gap: 0; }
+/* Keep each block at its natural height so a tight viewport scrolls the area
+   instead of compressing the settings card (which clips its last rows). */
+.account-area.acct > * { flex-shrink: 0; }
 
 /* ── profile: frog avatar + email, centered (Figma 5475:11858) ── */
 .acct-profile {
