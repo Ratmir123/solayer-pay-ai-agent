@@ -781,10 +781,7 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
   // "impact" on finger-down; release springs back with the CSS overshoot.
   const orbPressDown = useCallback((e) => {
     try { if (navigator.vibrate) navigator.vibrate(8); } catch (_) {}
-    // squish toward the finger (not from the center) so the press feels located
-    const r = e.currentTarget.getBoundingClientRect();
-    e.currentTarget.style.transformOrigin = `${e.clientX - r.left}px ${e.clientY - r.top}px`;
-    e.currentTarget.classList.add('is-pressing');
+    e.currentTarget.classList.add('is-pressing');   // gentle squish from the center (CSS)
   }, []);
   const orbPressUp = useCallback((e) => { e.currentTarget.classList.remove('is-pressing'); }, []);
   const buildOrderFrom = useCallback((text) => {

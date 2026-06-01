@@ -322,19 +322,20 @@
   display: flex; align-items: center; justify-content: center;
   cursor: pointer; user-select: none;
   -webkit-tap-highlight-color: transparent;
-  /* press feedback: squish toward the finger on press, ease cleanly back on
-     release — no overshoot (the springy "stretch" was removed on request) */
+  /* press feedback: a soft, slow give from the CENTER. Long, gentle easing both
+     ways so the orb melts under the finger instead of snapping — the inner blobs,
+     glow breath and edge beam all keep flowing through the press untouched. */
   transform: scale(1);
   transform-origin: center center;
-  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
   will-change: transform;
   touch-action: manipulation;
 }
 /* finger down → quick squish-in (the "impact"); release springs back via the
    overshoot above. Toggled by JS on pointerdown/up (see FrogAgent). */
 .blob-stack.is-pressing {
-  transform: scale(0.92);
-  transition: transform 0.11s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: scale(0.94);
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 @media (prefers-reduced-motion: reduce) {
   .blob-stack, .blob-stack.is-pressing { transition-duration: 0.01s; }
@@ -2148,6 +2149,10 @@
 /* live: faster breath + faster beam sweep */
 .vorb.is-live .vorb-ring { animation-duration: 2.4s, 1.15s; }
 .vorb.is-live .vorb-beam-light { animation-duration: 3s; }
+/* thinking / searching (right after the tap): the thin rim beam sweeps faster,
+   reading as active "processing" while the orb gently contracts (vorbThink). */
+.phase-thinking .vorb-beam-light,
+.phase-searching .vorb-beam-light { animation-duration: 1.6s; }
 
 /* ── smooth, premium ENTRANCE — the whole stage (sphere + edge + beam)
    scales in as ONE unit, so the border beam never detaches from the circle ── */
