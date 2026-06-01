@@ -80,11 +80,20 @@
     padding-bottom: max(env(safe-area-inset-bottom, 0px) + 10px, 14px);
     padding-left: max(16px, env(safe-area-inset-left, 0px));
     padding-right: max(16px, env(safe-area-inset-right, 0px));
+    /* the 40px desktop fade is overkill on a phone and shows as dead space above
+       the pinned composer; a shorter melt is plenty and lets the composer sit
+       just above the pill (see .agent-footer below). */
+    padding-top: 16px;
   }
   /* keep the composer/footer column on the same safe horizontal inset */
   .agent-footer {
     padding-left: max(14px, env(safe-area-inset-left, 0px));
     padding-right: max(14px, env(safe-area-inset-right, 0px));
+    /* The composer is a pinned footer, not scrolling content, so it shouldn't
+       reserve the full dock height — that parked it ~46px above the tab pill.
+       Trim the reserve so it sits ~16px above the pill (gap = reserve − 66px,
+       and the shortened dock fade above means no overlap). */
+    margin-bottom: calc(var(--dock-h) - 30px);
   }
 
   /* Dev-only floating Tweaks panel would float over the real UI and break the
@@ -93,6 +102,36 @@
 
   /* The mic-permission hint banner sits at the very top; clear the real notch. */
   .mic-hint { top: max(env(safe-area-inset-top, 0px) + 8px, 12px); }
+
+  /* ════════════════════════════════════════════════════════════════
+     MOBILE GPU RELIEF — keep the look, kill the jank.
+     Phones choke on two things here: (1) big `backdrop-filter` blurs, which
+     the GPU re-samples every frame anything behind them scrolls/animates, and
+     (2) animated `filter: blur()`, which re-rasterizes each frame. Blur cost
+     grows ~radius², so trimming radii is most of the win. Resting visuals stay
+     ~identical and every animation keeps its timing — this only changes HOW
+     the frosted glass and a couple of entrances are rendered, not the motion.
+     Desktop (the mockup) is untouched; it isn't where the jank is.
+     ════════════════════════════════════════════════════════════════ */
+
+  /* Always-visible / large frosted glass — cap the blur radius. The bottom tab
+     dock is on every screen and re-blurs during every scroll & transition, so
+     it's the most pervasive cost. */
+  .bottom-tabs { -webkit-backdrop-filter: blur(12px) saturate(140%); backdrop-filter: blur(12px) saturate(140%); }
+  .composer    { -webkit-backdrop-filter: blur(10px) saturate(150%); backdrop-filter: blur(10px) saturate(150%); }
+  .cta         { -webkit-backdrop-filter: blur(10px) saturate(150%); backdrop-filter: blur(10px) saturate(150%); }
+  .vc-side     { -webkit-backdrop-filter: blur(10px) saturate(150%); backdrop-filter: blur(10px) saturate(150%); }
+
+  /* The full-screen soft-light noise dither pulls the whole app into a blended
+     compositing group → it gets recomposited on every animation behind it. The
+     anti-banding it buys is invisible on a dense phone display, so drop it. */
+  .agent-host::before { display: none; }
+
+  /* Swap the two blur-ANIMATING entrances for opacity/transform variants (same
+     timing & easing, see *Lite keyframes below). The orb's resting look and its
+     live reactive glow are untouched — only the one-time appear/word-in change. */
+  .vorb-disc { animation-name: vorbDiscInLite; }
+  .vt-word   { animation-name: vtWordInLite; }
 }
 
 /* ── Small phones (≤ 360px) — keep fixed-size elements from clipping ── */
@@ -106,4 +145,18 @@
   .agent-header, .cardx-header { padding-top: max(env(safe-area-inset-top, 0px) + 8px, 12px); }
   .tab-bar-dock { padding-bottom: max(env(safe-area-inset-bottom, 0px) + 6px, 10px);
                   padding-top: 20px; }
+}
+
+/* Cheaper entrance variants used ONLY on mobile (referenced in the phone media
+   query above via animation-name). Same motion as the originals (vorbDiscIn /
+   vtWordIn) but without the per-frame `filter: blur()` rasterization: the orb
+   disc softens in from a small 8px blur instead of 20px, and transcript words
+   fade + slide in with no blur. Desktop keeps the originals from agent.css. */
+@keyframes vorbDiscInLite {
+  from { filter: blur(8px); }
+  to   { filter: blur(0); }
+}
+@keyframes vtWordInLite {
+  from { opacity: 0; transform: translateY(0.16em); }
+  to   { opacity: 1; transform: translateY(0); }
 }

@@ -263,6 +263,7 @@ function useMic(active, levelRef, hostRef, recRef) {
     let audioCtx,analyser,raf,stream,rec,alive = true;
     let chunks = [];
     let smoothed = 0;
+    let lastVol = '';   // last --vol string written → skip redundant orb repaints
     const start = async () => {
       try {
         stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -302,7 +303,17 @@ function useMic(active, levelRef, hostRef, recRef) {
           smoothed = smoothed * 0.85 + avg * 0.15;
           const v = Math.max(0, Math.min(1.4, smoothed));
           levelRef.current = v;
-          if (hostRef.current) hostRef.current.style.setProperty('--vol', v.toFixed(3));
+          // Each --vol write repaints the orb's reactive glow (box-shadow, which
+          // isn't GPU-composited). Only touch the DOM when the value changes at
+          // 0.01 granularity: at silence/steady state this skips nearly every
+          // write, and the step is imperceptible given the low-pass smoothing
+          // above + the CSS transitions on the reactive elements. Keeps the
+          // "floaty" feel, drops a constant repaint source on the voice screen.
+          const s = v.toFixed(2);
+          if (s !== lastVol) {
+            lastVol = s;
+            if (hostRef.current) hostRef.current.style.setProperty('--vol', s);
+          }
           raf = requestAnimationFrame(loop);
         };
         loop();
