@@ -322,21 +322,22 @@
   display: flex; align-items: center; justify-content: center;
   cursor: pointer; user-select: none;
   -webkit-tap-highlight-color: transparent;
-  /* press feedback (Apple-style): a smooth give from the CENTER on press, then a
-     springy release that overshoots a touch past full size and settles — the
-     satisfying "pop". Scale lives on this wrapper only, so the inner blobs, glow
-     breath and edge beam keep flowing straight through the press untouched. */
+  /* press feedback: a soft, very smooth give from the CENTER — no bounce, no
+     overshoot, just a gentle ease in and back out so it feels calm and premium.
+     The slow-start/slow-end curve avoids the "punchy" feel of a fast ease-out.
+     Scale lives on this wrapper only, so the inner blobs, glow and edge beam keep
+     flowing straight through the press untouched. */
   transform: scale(1);
   transform-origin: center center;
-  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.6, 1);   /* release: spring overshoot */
+  transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);   /* release: smooth, no overshoot */
   will-change: transform;
   touch-action: manipulation;
 }
 /* finger down → quick squish-in (the "impact"); release springs back via the
    overshoot above. Toggled by JS on pointerdown/up (see FrogAgent). */
 .blob-stack.is-pressing {
-  transform: scale(0.92);
-  transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);   /* press-in: quick but smooth, no snap */
+  transform: scale(0.94);
+  transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);   /* press-in: gentle + gradual, no punch */
 }
 @media (prefers-reduced-motion: reduce) {
   .blob-stack, .blob-stack.is-pressing { transition-duration: 0.01s; }
