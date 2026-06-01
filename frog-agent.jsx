@@ -877,6 +877,17 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
   const acceptOrderCard = useCallback((card) => {
     setIntent(card.cat);setStoreIdx(0);setCart([card.item]);setPhase('confirming');
   }, []);
+  // "Order again" from a past order = repeat the EXACT order: same store + same
+  // items/total, straight to Review + Face ID. (No re-picking a category/store.)
+  const reorderPast = useCallback((o) => {
+    const list = STORES[o.cat] || [];
+    const idx = list.findIndex((s) => s.name === o.store);
+    setIntent(o.cat);
+    setStoreIdx(idx >= 0 ? idx : 0);
+    setCart([{ name: o.summary, price: o.total, qty: 1, emoji: o.emoji }]);
+    setTranscript('');
+    setPhase('confirming');
+  }, []);
 
   // tab navigation — AI tab opens voice first; if a chat is already going, keep it
   const navTab = useCallback((k) => {
@@ -1136,7 +1147,7 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
         theme={theme}
         upcoming={orders.upcoming}
         past={orders.past}
-        onReorder={pickCategory}
+        onReorder={reorderPast}
         onClose={goIdle} />
 
       }
@@ -2088,7 +2099,7 @@ function PastOrderCard({ o, index, onReorder }) {
       </div>
       {o.cat && onReorder &&
       <button className="order-reorder" type="button"
-      onClick={() => onReorder(o.cat)}
+      onClick={() => onReorder(o)}
       aria-label={`Order again from ${o.store}`}>
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M13.2 8a5.2 5.2 0 1 1-1.5-3.66M13.4 2.2v3h-3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>
       </button>}
