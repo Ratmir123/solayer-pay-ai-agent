@@ -1,0 +1,24 @@
+# ── Secrets ─────────────────────────────────────────────────────────────
+# The OpenAI key goes into Vercel env vars (vercel env add), NEVER the bundle.
+.env
+.env.*
+
+# ── Heavy non-runtime asset sources (~174 MB) ───────────────────────────
+# Runtime needs only images/*.webp + the root mascot-*-strip.webp sprite strips.
+# These are originals/backups/refs the deployed app never loads.
+Mascot_anim/
+_img-backup/
+uploads/
+_fig/
+
+# ── Dev tooling / orchestrator — not needed at runtime ──────────────────
+.goal/
+.claude/
+serve.py
+gen_images.py
+gen_icons.py
+CLAUDE.md
+.thumbnail
+
+# ── VCS ─────────────────────────────────────────────────────────────────
+.git/
