@@ -1831,56 +1831,113 @@
   padding: max(calc(env(safe-area-inset-top, 0px) + 16px), 60px) 0 var(--dock-h);
   gap: 20px;
 }
-.account-header-card {
-  margin: 0 18px;
-  padding: 18px;
-  background: var(--card);
-  border: 1px solid var(--card-border);
-  border-radius: 22px;
-  display: flex; align-items: center; gap: 16px;
-}
-.account-avatar { position: relative; flex-shrink: 0; }
-.account-sparkle {
-  position: absolute; top: -4px; right: -6px;
-  animation: sparklepulse 2.4s ease-in-out infinite;
-}
-.account-id { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 4px; }
-.account-name { font-size: 18px; font-weight: 600; color: var(--ink); letter-spacing: -0.01em; }
-.account-handle { font-size: 12px; color: var(--sub); font-family: 'Geist Mono', monospace; }
-.account-stats { margin-top: 4px; display: flex; flex-wrap: wrap; gap: 6px; }
+/* The account layer rides on the app background (left untouched — no
+   surface of its own), and drives its own vertical rhythm via margins. */
+.account-area.acct { gap: 0; }
 
-.account-section { padding: 0 18px; display: flex; flex-direction: column; gap: 8px; }
-.section-title.small { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--sub); font-family: 'Geist Mono', monospace; font-weight: 600; }
+/* ── profile: frog avatar + email, centered (Figma 5475:11858) ── */
+.acct-profile {
+  display: flex; flex-direction: column; align-items: center; gap: 16px;
+  padding: 0 20px; margin-bottom: 34px;
+}
+.acct-avatar {
+  width: 72px; height: 72px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.acct-avatar img {
+  width: 72px; height: 72px; display: block;
+  object-fit: contain; object-position: center;
+}
+.acct-email {
+  font-size: 20px; font-weight: 400; line-height: 1.2;
+  color: #fff; letter-spacing: -0.01em; text-align: center;
+  text-decoration: none; word-break: break-word;
+  transition: color .15s ease;
+}
+.acct-email:hover { color: rgba(255,255,255,0.78); }
 
-.account-list {
-  list-style: none; margin: 0; padding: 0;
-  background: var(--card);
-  border: 1px solid var(--card-border);
+/* ── settings card (Figma 5475:11869): solid panel, hairline dividers ── */
+.acct-card {
+  margin: 0 20px;
+  display: flex; flex-direction: column;
+  background: #131313;
+  border: 1px solid #2e3231;
   border-radius: 16px;
   overflow: hidden;
 }
-.account-row {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--card-border);
-  font-size: 14px;
+.acct-row {
+  display: flex; align-items: center; gap: 15px;
+  width: 100%; min-height: 52px;
+  margin: 0; padding: 12px; box-sizing: border-box;
+  border: 0; border-bottom: 1px solid #2e3231;
+  background: transparent; text-align: left;
+  color: #fff; font-family: inherit;
+  font-size: 16px; font-weight: 400; letter-spacing: -0.01em; line-height: 1.2;
+}
+.acct-row:last-child { border-bottom: none; }
+.acct-row-link {
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
   transition: background .15s ease;
-  cursor: pointer;
-  animation: bubbleIn .42s var(--ease-out) backwards;
 }
-.account-row:last-child { border-bottom: none; }
-.account-row:hover { background: rgba(255,255,255,0.04); }
-.theme-lily .account-row:hover { background: rgba(15,31,6,0.04); }
-.account-row-lbl { color: var(--sub); }
-.account-row-val { color: var(--ink); display: flex; align-items: center; gap: 6px; }
-.account-row-val .dim { color: var(--sub); }
-.account-row-val.accent { color: var(--accent); }
+.acct-row-link:hover { background: rgba(255,255,255,0.035); }
+.acct-row-link:active { background: rgba(255,255,255,0.06); }
+.acct-ico {
+  flex-shrink: 0; width: 24px; height: 24px;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: #fff;
+}
+.acct-lbl { flex: 1 1 auto; min-width: 0; color: #fff; }
+.acct-caret {
+  flex-shrink: 0; width: 20px; height: 20px;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: rgba(255,255,255,0.8);
+}
 
-.signout {
-  margin: 8px auto 0;
-  color: #ff8080 !important;
+/* pencil on the name row */
+.acct-edit {
+  flex-shrink: 0; width: 24px; height: 24px; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: transparent; border: 0; color: #fff; cursor: pointer;
+  -webkit-tap-highlight-color: transparent; transition: opacity .15s ease;
 }
-.signout:hover { color: #ff5050 !important; background: rgba(255,80,80,0.08); }
+.acct-edit:hover { opacity: 0.7; }
+
+/* notification toggle (Figma 5475:11906 — 44×24, track #084d3e when on) */
+.acct-toggle {
+  flex-shrink: 0; width: 44px; height: 24px; padding: 2px;
+  display: inline-flex; align-items: center;
+  border: 0; border-radius: 999px; cursor: pointer;
+  background: rgba(255,255,255,0.18);
+  transition: background .2s var(--ease-soft);
+  -webkit-tap-highlight-color: transparent;
+}
+.acct-toggle-knob {
+  width: 20px; height: 20px; border-radius: 50%; background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.1);
+  transform: translateX(0); transition: transform .2s var(--ease-out);
+}
+.acct-toggle.is-on { background: #084d3e; }
+.acct-toggle.is-on .acct-toggle-knob { transform: translateX(20px); }
+
+/* ── Log Out / Delete Account (Figma 5475:11949) ── */
+.acct-actions {
+  margin: 24px 20px 0;
+  display: flex; flex-direction: column; gap: 16px;
+}
+.acct-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; height: 48px; padding: 6px;
+  border: 0; border-radius: 16px; cursor: pointer;
+  color: #fff; font-family: inherit;
+  font-size: 14px; font-weight: 400; letter-spacing: -0.01em;
+  -webkit-tap-highlight-color: transparent;
+  transition: filter .18s var(--ease-soft), transform .16s var(--ease-out);
+}
+.acct-btn svg { flex-shrink: 0; }
+.acct-btn:hover { filter: brightness(1.12); }
+.acct-btn:active { transform: scale(0.985); }
+.acct-btn--logout { background: #084d3e; }
+.acct-btn--delete { background: #752319; }
 
 /* ──────────────────────────────────────────────────────────────
    VOICE ORB — premium gradient sphere

@@ -1782,60 +1782,110 @@ function WalletScreen({ theme, orders }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Account screen (placeholder)
+// Account screen — faithful rebuild of the Figma "Account" tab
+// (solayer-app, node 5475:11838). Dark-only with exact Figma colors,
+// same convention as the Card tab. The mascot frog is kept as the
+// avatar in place of the Figma merchant logo; the app background is
+// left untouched (this layer is transparent over it).
+// 24px line glyphs recreated inline (currentColor) to match the Figma.
 // ─────────────────────────────────────────────────────────────
-function AccountScreen({ theme }) {
-  const items = [
-  { group: 'Profile', rows: [
-    { lbl: 'Address', val: 'Sol4y...e8Q9' },
-    { lbl: 'Display name', val: 'Frog enjoyer' },
-    { lbl: 'Email', val: 'pepe@solayer.org' }]
-  },
-  { group: 'Solayer Pay', rows: [
-    { lbl: 'Auto-pay limit', val: '$50 / order' },
-    { lbl: 'Default network', val: 'Solana' },
-    { lbl: 'Biometric', val: 'Face ID · on', accent: true }]
-  },
-  { group: 'Preferences', rows: [
-    { lbl: 'Voice language', val: 'English (US)' },
-    { lbl: 'Frog responses', val: 'Friendly' },
-    { lbl: 'Haptics', val: 'on' }]
-  }];
+function IcoPerson() {
+  return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8" r="3.4" stroke="currentColor" strokeWidth="1.6" /><path d="M5.5 19.2a6.5 6.5 0 0 1 13 0" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>;
+}
+function IcoPencil() {
+  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M16.4 4.6l3 3M3.6 20.4l1-4.1L15.9 5a1.7 1.7 0 0 1 2.4 0l.7.7a1.7 1.7 0 0 1 0 2.4L7.7 19.4l-4.1 1Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round" /></svg>;
+}
+function IcoShield() {
+  return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3l7 2.6v5.1c0 4.4-3 7.7-7 9.3-4-1.6-7-4.9-7-9.3V5.6L12 3Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" /></svg>;
+}
+function IcoBook() {
+  return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 6.6C10.5 5.3 8.6 4.8 4.6 4.8v12.5c4 0 5.9.5 7.4 1.9 1.5-1.4 3.4-1.9 7.4-1.9V4.8c-4 0-5.9.5-7.4 1.8Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" /><path d="M12 6.6v12.6" stroke="currentColor" strokeWidth="1.6" /></svg>;
+}
+function IcoBell() {
+  return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 9.6a6 6 0 0 1 12 0c0 3.9 1.1 5.4 1.9 6.2.4.4.1 1.1-.5 1.1H4.6c-.6 0-.9-.7-.5-1.1.8-.8 1.9-2.3 1.9-6.2Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" /><path d="M10 20a2 2 0 0 0 4 0" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>;
+}
+function IcoShieldCheck() {
+  return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3l7 2.6v5.1c0 4.4-3 7.7-7 9.3-4-1.6-7-4.9-7-9.3V5.6L12 3Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" /><path d="M9 11.7l2.1 2.1 4-4.2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+}
+function IcoGlobe() {
+  return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8.4" stroke="currentColor" strokeWidth="1.6" /><path d="M3.7 12h16.6" stroke="currentColor" strokeWidth="1.6" /><path d="M12 3.6c2.2 2.3 3.4 5.3 3.4 8.4S14.2 18.1 12 20.4C9.8 18.1 6.6 15.1 6.6 12S9.8 5.9 12 3.6Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" /></svg>;
+}
+function IcoPhone() {
+  return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 4.6l1.8.3 1.1 2.9-1.5 1.3a9 9 0 0 0 4.2 4.2l1.3-1.5 2.9 1.1.3 1.8c0 .9-.7 1.6-1.6 1.5C11.9 17 7 12.1 6.5 6.2A1.5 1.5 0 0 1 7 4.6Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" /><path d="M14.6 4.6c1.1.2 2.1.7 2.9 1.5M14.2 7.4c.5.1 1 .4 1.4.8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>;
+}
+function IcoLogout() {
+  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M14 8.4V6a1.6 1.6 0 0 0-1.6-1.6H6A1.6 1.6 0 0 0 4.4 6v12A1.6 1.6 0 0 0 6 19.6h6.4A1.6 1.6 0 0 0 14 18v-2.4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /><path d="M9.5 12h10m0 0l-3-3m3 3l-3 3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+}
+function IcoTrash() {
+  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4.5 6.6h15M9.5 6.6V5.1a1.3 1.3 0 0 1 1.3-1.3h2.4a1.3 1.3 0 0 1 1.3 1.3v1.5M6.6 6.6l.8 11.9a1.5 1.5 0 0 0 1.5 1.4h6.2a1.5 1.5 0 0 0 1.5-1.4l.8-11.9" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /><path d="M10 10.4v6M14 10.4v6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>;
+}
+
+function AccountScreen() {
+  const [notif, setNotif] = React.useState(true);
+
+  // settings rows that simply navigate (icon + label + caret), split
+  // around the special Notification row that carries the toggle.
+  const linksTop = [
+  { lbl: 'User Privacy', ico: <IcoShield /> },
+  { lbl: 'End user agreement', ico: <IcoBook /> }];
+  const linksBottom = [
+  { lbl: 'Manage your passkey', ico: <IcoShieldCheck /> },
+  { lbl: 'Change language', ico: <IcoGlobe /> },
+  { lbl: 'Contact us', ico: <IcoPhone /> }];
 
   return (
-    <div className="account-area">
-      <section className="account-header-card">
-        <div className="account-avatar">
-          <img id="account-avatar" className="img-fade" src="mascot.png" alt="Solayer mascot"
-          style={{ width: '72px', height: '72px', display: 'block', objectFit: 'contain', objectPosition: 'center', borderRadius: 14, imageRendering: 'auto' }} />
-          <span className="account-sparkle"><Sparkle color={theme.accent} size={14} /></span>
+    <div className="account-area acct">
+      <div className="acct-profile">
+        <div className="acct-avatar">
+          <img className="img-fade" src="mascot.png" alt="Solayer mascot"
+          decoding="async" draggable="false" />
         </div>
-        <div className="account-id">
-          <div className="account-name">Frog enjoyer</div>
-          <div className="account-handle">@pepe · joined Mar 2026</div>
-          <div className="account-stats">
-            <span className="meta-pill">142 orders</span>
-            <span className="meta-pill solana">Solayer member</span>
-          </div>
+        <a className="acct-email" href="mailto:cc321@gmail.com">cc321@gmail.com</a>
+      </div>
+
+      <div className="acct-card">
+        <div className="acct-row">
+          <span className="acct-ico"><IcoPerson /></span>
+          <span className="acct-lbl">Panda Hu</span>
+          <button className="acct-edit" type="button" aria-label="Edit name"><IcoPencil /></button>
         </div>
-      </section>
 
-      {items.map((g, gi) =>
-      <section key={g.group} className="account-section">
-          <h3 className="section-title small">{g.group}</h3>
-          <ul className="account-list">
-            {g.rows.map((r, ri) =>
-          <li key={ri} className="account-row"
-          style={{ animationDelay: `${Math.min(ri, 8) * 40}ms` }}>
-                <span className="account-row-lbl">{r.lbl}</span>
-                <span className={`account-row-val ${r.accent ? 'accent' : ''}`}>{r.val} <span className="dim">›</span></span>
-              </li>
-          )}
-          </ul>
-        </section>
-      )}
+        {linksTop.map((r) =>
+        <button key={r.lbl} className="acct-row acct-row-link" type="button">
+            <span className="acct-ico">{r.ico}</span>
+            <span className="acct-lbl">{r.lbl}</span>
+            <span className="acct-caret"><PhCaretRight size={20} /></span>
+          </button>
+        )}
 
-      <button className="cta ghost-link signout">sign out</button>
+        <div className="acct-row">
+          <span className="acct-ico"><IcoBell /></span>
+          <span className="acct-lbl">Notification</span>
+          <button
+          className={`acct-toggle${notif ? ' is-on' : ''}`}
+          type="button" role="switch" aria-checked={notif} aria-label="Notifications"
+          onClick={() => setNotif((v) => !v)}>
+            <span className="acct-toggle-knob" />
+          </button>
+        </div>
+
+        {linksBottom.map((r) =>
+        <button key={r.lbl} className="acct-row acct-row-link" type="button">
+            <span className="acct-ico">{r.ico}</span>
+            <span className="acct-lbl">{r.lbl}</span>
+            <span className="acct-caret"><PhCaretRight size={20} /></span>
+          </button>
+        )}
+      </div>
+
+      <div className="acct-actions">
+        <button className="acct-btn acct-btn--logout" type="button">
+          <IcoLogout /><span>Log Out</span>
+        </button>
+        <button className="acct-btn acct-btn--delete" type="button">
+          <IcoTrash /><span>Delete Account</span>
+        </button>
+      </div>
     </div>);
 
 }
