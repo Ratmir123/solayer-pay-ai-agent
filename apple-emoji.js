@@ -157,6 +157,22 @@
     '{width:1.3em;height:1.3em;vertical-align:-0.18em}' +
     // the menu tiles are the biggest plates (60px) — let the emoji sit a touch larger
     '.menu-row-emoji .apple-emoji{width:1.45em;height:1.45em;vertical-align:-0.2em}';
+  // Expose a preloader so the app can warm the Apple-emoji cache up-front — the
+  // same "load once at start" treatment the photos get. These glyphs come from a
+  // CDN, so without this they pop in one-by-one the first time a screen (e.g. the
+  // order/menu list) renders. Preloads only the primary 160px candidate per
+  // emoji; if that 404s the component still falls back at render time. Dedupes.
+  window.preloadAppleEmoji = function (list) {
+    if (!list || !list.forEach) return;
+    var seen = Object.create(null);
+    list.forEach(function (e) {
+      if (!e || seen[e]) return;
+      seen[e] = 1;
+      var urls = candidates(e);
+      if (urls && urls.length) { var im = new Image(); im.decoding = 'async'; im.src = urls[0]; }
+    });
+  };
+
   function injectCSS() {
     if (document.querySelector('style[data-apple-emoji]')) return;
     var st = document.createElement('style');

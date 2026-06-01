@@ -438,20 +438,6 @@ function VoiceOrb({ theme, listening }) {
     </div>
   );
 }
-// Back-compat alias for any old callers
-const MorphBlob = VoiceOrb;
-
-function Ripples({ theme, show }) {
-  if (!show) return null;
-  return (
-    <div className="ripples">
-      {[0, 1, 2].map((i) =>
-      <span key={i} className="ripple"
-      style={{ animationDelay: `${i * 0.7}s`, borderColor: theme.accent }} />
-      )}
-    </div>);
-
-}
 
 function Particles({ theme, listening }) {
   const dots = Array.from({ length: 14 });
@@ -633,8 +619,18 @@ function VoiceTranscript({ transcript }) {
 function FrogAgent({ theme, intensity = 1, showParticles = true }) {
   // phase: idle | listening | thinking | searching | confirming | paying | success
   // open on the voice screen (the "talk, we order" selling point);
-  // chat is the optional fallback (keyboard button in the voice controls)
-  const [phase, setPhase] = useState('listening');
+  // chat is the optional fallback (keyboard button in the voice controls).
+  // Exception — preview/automation host: the voice phase auto-requests the mic
+  // and renders a heavy backdrop-filter orb, which hangs preview screenshots/eval
+  // and pops a mic prompt nobody answers. The Claude preview is an Electron app
+  // (navigator.webdriver is false there), so detect it by UA and open on the
+  // lighter idle chat instead. Real browsers (Chrome/Safari/Firefox) are
+  // unaffected and still open on the voice hero.
+  const isPreviewHost = typeof navigator !== 'undefined' && (
+    navigator.webdriver === true ||
+    /\bElectron\b|\bClaude\//.test(navigator.userAgent || '')
+  );
+  const [phase, setPhase] = useState(isPreviewHost ? 'idle' : 'listening');
   const [transcript, setTranscript] = useState('');
   const [intent, setIntent] = useState(null); // 'pizza' etc
   const [storeIdx, setStoreIdx] = useState(0);
@@ -667,6 +663,37 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
   const listening = phase === 'listening';
   useMic(listening, levelRef, hostRef, recCtrlRef);
   useTranscript(listening, setTranscript);
+
+  // Preload every image once, up-front, so opening any tab later is instant and
+  // the browser never re-fetches/re-decodes on each mount (paired with the
+  // session caching serve.py now sends for images). Runs once on mount.
+  useEffect(() => {
+    const urls = new Set();
+    (CATEGORIES || []).forEach((c) => {
+      urls.add(`images/icon-${c.key}.webp`);
+      urls.add(`images/cat-${c.key}.webp`);
+    });
+    Object.keys(STORES || {}).forEach((cat) => {
+      (STORES[cat] || []).forEach((s) => urls.add(storeImg(s, cat)));
+    });
+    (typeof CARD_TX !== 'undefined' ? CARD_TX : []).forEach((t) => { if (t.img) urls.add(t.img); });
+    ['mascot.png', 'fig-card-texture.webp', 'fig-solayer-wordmark.svg', 'Emerald Logo.png',
+      'mascot-anim-strip.webp', 'mascot-bubble-strip.webp', 'mascot-glitch-strip.webp']
+      .forEach((u) => urls.add(u));
+    urls.forEach((u) => { const im = new Image(); im.decoding = 'async'; im.src = u; });
+
+    // Warm the Apple-emoji cache too (menu/category/order emoji are fetched from
+    // a CDN; preloading them once removes the visible pop-in when a screen opens).
+    if (typeof window !== 'undefined' && typeof window.preloadAppleEmoji === 'function') {
+      const emoji = [];
+      (CATEGORIES || []).forEach((c) => { if (c.emoji) emoji.push(c.emoji); });
+      Object.keys(typeof MENUS !== 'undefined' ? MENUS : {}).forEach((cat) => {
+        (MENUS[cat] || []).forEach((m) => { if (m.emoji) emoji.push(m.emoji); });
+      });
+      ['👋', '✨', '🎉', '🍴', '⬇️'].forEach((e) => emoji.push(e));
+      window.preloadAppleEmoji(emoji);
+    }
+  }, []);
 
   // recording timer
   useEffect(() => {
@@ -714,9 +741,6 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
   // ── phase transitions ──
   const goIdle = useCallback(() => {
     setPhase('idle');setTranscript('');setIntent(null);setStoreIdx(0);setCart([]);
-  }, []);
-  const goSpeak = useCallback(() => {
-    setTranscript('');setIntent(null);setStoreIdx(0);setPhase('listening');
   }, []);
   const startListen = useCallback(() => {
     setTranscript('');setIntent(null);setStoreIdx(0);setCart([]);setPhase('listening');
@@ -811,10 +835,6 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
   phase === 'wallet' && 'card' ||
   phase === 'account' && 'account' ||
   'ai'; // orders + AI flow all roll up to the AI Order tab
-  const showOtherStore = useCallback(() => {
-    if (!intent) return;
-    setStoreIdx((i) => (i + 1) % STORES[intent].length);
-  }, [intent]);
   // Face ID hold completes → record the order and go straight to success.
   // (The old standalone "paying" screen is gone; biometric auth now lives inside
   // the Review-order screen, so there's no redundant price+FaceID step.)
@@ -1440,15 +1460,6 @@ function FaceIdGlyph({ color = '#fff' }) {
 
 }
 
-function ShieldGlyph() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-      <path d="M7 1l5 2v4c0 3-2 5-5 6-3-1-5-3-5-6V3l5-2z" stroke="currentColor" strokeWidth="1.5" fill="none" />
-      <path d="M4.5 7l1.7 1.7L9.5 5.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>);
-
-}
-
 function SearchSpinner({ color = '#00ffa3' }) {
   return (
     <svg width="14" height="14" viewBox="0 0 14 14" style={{ verticalAlign: '-2px', marginRight: 6 }}>
@@ -1457,15 +1468,6 @@ function SearchSpinner({ color = '#00ffa3' }) {
         <animateTransform attributeName="transform" type="rotate" from="0 7 7" to="360 7 7" dur="0.9s" repeatCount="indefinite" />
       </path>
     </svg>);
-
-}
-
-// small in-line frog avatar for confirm chat bubble (deprecated, kept for back-compat)
-function SvgFrogChip({ phase = 'idle' }) {
-  return (
-    <div style={{ width: 36, height: 36, flexShrink: 0, marginRight: -2 }}>
-      {typeof SvgFrog === 'function' ? <SvgFrog phase={phase} /> : null}
-    </div>);
 
 }
 
@@ -1567,61 +1569,6 @@ function BottomTabs({ active, onNav, ordersCount, accent }) {
     </div>);
 
 }
-
-function TabIconAI({ active }) {
-  return (
-    <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-      <path d="M11 2.5L12.6 7.3L17.5 8.5L13.6 11.7L14.6 16.5L11 14L7.4 16.5L8.4 11.7L4.5 8.5L9.4 7.3L11 2.5Z"
-      fill={active ? 'currentColor' : 'none'}
-      stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
-      <path d="M18 3L18.5 4.5L20 5L18.5 5.5L18 7L17.5 5.5L16 5L17.5 4.5L18 3Z" fill="currentColor" />
-    </svg>);
-
-}
-function TabIconOrders({ active }) {
-  return (
-    <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-      <rect x="5" y="4.5" width="12" height="14.5" rx="2.5"
-      stroke="currentColor" strokeWidth="1.6"
-      fill={active ? 'currentColor' : 'none'} fillOpacity={active ? 0.18 : 0} />
-      <rect x="8" y="3" width="6" height="3.2" rx="1" fill="currentColor" />
-      <path d="M8.5 10h5M8.5 13h5M8.5 16h3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-    </svg>);
-
-}
-function TabIconWallet({ active }) {
-  return (
-    <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-      <rect x="3" y="6" width="16" height="12" rx="2.5"
-      stroke="currentColor" strokeWidth="1.6"
-      fill={active ? 'currentColor' : 'none'} fillOpacity={active ? 0.18 : 0} />
-      <path d="M3 10h16" stroke="currentColor" strokeWidth="1.6" />
-      <circle cx="15.5" cy="14.5" r="1.2" fill="currentColor" />
-    </svg>);
-
-}
-function TabIconAccount({ active }) {
-  return (
-    <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-      <circle cx="11" cy="8" r="3.5"
-      stroke="currentColor" strokeWidth="1.6"
-      fill={active ? 'currentColor' : 'none'} fillOpacity={active ? 0.18 : 0} />
-      <path d="M4 18.5c1.3-2.8 4-4.5 7-4.5s5.7 1.7 7 4.5"
-      stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" fill="none" />
-    </svg>);
-
-}
-
-// ─────────────────────────────────────────────────────────────
-// Wallet screen
-// ─────────────────────────────────────────────────────────────
-const MOCK_TX = [
-{ id: 't1', to: "Joe's Slice Shop", emoji: '🍕', when: '2 min ago', amt: -18.50, note: 'Large pepperoni pizza' },
-{ id: 't2', to: 'Bean Lab', emoji: '☕', when: '3 days ago', amt: -6.50, note: 'Iced oat latte' },
-{ id: 't3', from: 'USDC top-up', emoji: '⬇️', when: '4 days ago', amt: 500.00, note: 'from Phantom wallet' },
-{ id: 't4', to: 'Tokyo Sushi', emoji: '🍣', when: '5 days ago', amt: -24.00, note: 'Salmon avocado roll set' },
-{ id: 't5', to: 'Solana Wheels', emoji: '🚗', when: '6 days ago', amt: -12.40, note: 'Ride to Mission St' },
-{ id: 't6', from: 'USDC earn', emoji: '✨', when: '1 wk ago', amt: 8.31, note: 'reward · Solayer staking' }];
 
 // Phosphor-style icons for the Card tab (recreated as inline SVG; currentColor).
 function PhPlus({ size = 24 }) {

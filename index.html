@@ -73,11 +73,47 @@
       z-index: 9999;
     }
     .mic-hint.on { opacity: 1; }
+
+    /* ── intro loader (welcoming words) — themed on the app's emerald wash ── */
+    .loading-container {
+      z-index: 500; pointer-events: none;
+      position: fixed; inset: 0; overflow: hidden;
+    }
+    .loading-screen {
+      pointer-events: auto; color: #fff;
+      background: #0b0b0c;   /* flat dark (raised black, not pure black) */
+      width: 100%; height: 100%;
+      display: flex; justify-content: center; align-items: center;
+      position: absolute; top: 0; left: 0;
+    }
+    .loading-words {
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0;
+    }
+    .loading-words__word {
+      font-family: 'Satoshi', 'Geist', -apple-system, system-ui, sans-serif;
+      font-size: 4.5em; font-weight: 500; line-height: 1; margin: 0;
+      letter-spacing: -0.01em;
+    }
+    @media screen and (max-width: 767px) {
+      .loading-words { font-size: 2.75vw; }
+    }
   </style>
   <!-- responsive layer (loaded last so it wins): fullscreen native on phones -->
   <link href="responsive.css" rel="stylesheet">
 </head>
 <body>
+  <!-- intro loader: welcoming words over the app's emerald wash; the app's
+       images/emoji preload underneath while this plays. Self-removing (see
+       preloader.js) so it can never trap the UI even if GSAP fails to load. -->
+  <div data-loading-container class="loading-container">
+    <div class="loading-screen">
+      <div data-loading-words="Hello, Bonjour, 你好, Ciao, Olá, Привет, Hallå, Guten Tag, Hallo" class="loading-words">
+        <p data-loading-words-target class="loading-words__word">Hello</p>
+      </div>
+    </div>
+  </div>
+
   <div id="root"></div>
   <div id="mic-hint" class="mic-hint"></div>
 
@@ -85,13 +121,15 @@
   <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
 
+  <!-- intro loader: GSAP (pinned to latest 3.x) + the self-removing init -->
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js" crossorigin="anonymous"></script>
+  <script src="preloader.js"></script>
+
   <!-- real Apple (iOS) emoji artwork in place of the OS default emoji set -->
   <script src="apple-emoji.js"></script>
-  <script src="image-slot.js"></script>
   <script src="motion.js"></script>
   <script type="text/babel" src="ios-frame.jsx"></script>
   <script type="text/babel" src="tweaks-panel.jsx"></script>
-  <script type="text/babel" src="svg-frog.jsx"></script>
   <script type="text/babel" src="frog-agent.jsx"></script>
   <script type="text/babel" src="app.jsx"></script>
 </body>

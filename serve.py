@@ -67,10 +67,22 @@ class Handler(SimpleHTTPRequestHandler):
     # Declare it so WebP is served as a proper image type.
     extensions_map = {**SimpleHTTPRequestHandler.extensions_map, ".webp": "image/webp"}
 
+    # Images/fonts don't change within a session, so let the browser cache them:
+    # they load once and never re-download when a screen re-mounts (this is what
+    # made icons visibly reload on every tab open). Code/markup stays uncached so
+    # edits always show on a normal refresh. After regenerating assets, hard-
+    # refresh once (Ctrl+Shift+R) to bypass the cache.
+    _CACHEABLE = (".webp", ".png", ".jpg", ".jpeg", ".gif", ".svg",
+                  ".webm", ".woff", ".woff2", ".ttf", ".ico")
+
     def end_headers(self):
-        self.send_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
-        self.send_header("Pragma", "no-cache")
-        self.send_header("Expires", "0")
+        path = self.path.split("?", 1)[0].lower()
+        if path.endswith(self._CACHEABLE):
+            self.send_header("Cache-Control", "public, max-age=3600")
+        else:
+            self.send_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+            self.send_header("Pragma", "no-cache")
+            self.send_header("Expires", "0")
         super().end_headers()
 
     def log_message(self, fmt, *args):  # quieter logs
