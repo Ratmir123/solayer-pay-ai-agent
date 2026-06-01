@@ -390,16 +390,6 @@ async function transcribeWhisper(blob) {
 function useTranscript(active, setTranscript) {
   useEffect(() => {
     if (!active) return;
-    // iOS (all browsers there are WebKit): webkitSpeechRecognition IS Apple's
-    // system dictation engine. It needs its OWN "Speech Recognition" grant — a
-    // 2nd prompt on top of getUserMedia — and plays the audible start/stop
-    // dictation tones while seizing the audio session (the "recorder on/off"
-    // sound). Whisper (/api/transcribe) already yields the real transcript, so
-    // skip these live captions on iOS to kill the double prompt + the sound.
-    // Desktop (Chrome/Firefox) keeps live captions: silent, no extra prompt.
-    const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) ||
-      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    if (isIOS) return;
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) return;
     const rec = new SR();
