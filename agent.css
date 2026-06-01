@@ -322,9 +322,11 @@
   display: flex; align-items: center; justify-content: center;
   cursor: pointer; user-select: none;
   -webkit-tap-highlight-color: transparent;
-  /* press feedback: spring back to rest with a gentle overshoot ("stretch" pop) */
+  /* press feedback: squish toward the finger on press, ease cleanly back on
+     release — no overshoot (the springy "stretch" was removed on request) */
   transform: scale(1);
-  transition: transform 0.36s cubic-bezier(0.34, 1.56, 0.45, 1);
+  transform-origin: center center;
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
   will-change: transform;
   touch-action: manipulation;
 }
@@ -387,6 +389,16 @@
   font-family: 'Geist Mono', ui-monospace, monospace;
   font-size: 12px; letter-spacing: 0.08em;
   text-transform: uppercase; color: var(--sub);
+}
+/* Keep the orb perfectly still across listening↔thinking↔searching: the in-stage
+   label reserves the SAME below-orb footprint as the listening transcript
+   (margin-top 32 + 54 = 86px), so the centered [orb + text] group never changes
+   height and the orb never nudges down when you tap to stop. */
+.stage .live-transcript {
+  margin-top: var(--s-32);
+  min-height: 54px;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 10px;
 }
 
 
@@ -728,6 +740,16 @@
   margin-bottom: var(--dock-h);
   padding: 12px 14px 14px;
   display: flex; align-items: center; justify-content: center;
+}
+/* Reserve one constant footer height across the voice phases so swapping the
+   cancel (×) controls for the "processing…" pill never changes the footer
+   height — paired with the .stage .live-transcript reserve above, this keeps the
+   orb fixed in place when you tap to stop. */
+.phase-listening .agent-footer,
+.phase-thinking .agent-footer,
+.phase-searching .agent-footer {
+  box-sizing: border-box;
+  min-height: 86px;
 }
 
 .cta {
