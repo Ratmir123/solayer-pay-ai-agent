@@ -696,6 +696,20 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
   useMic(listening, levelRef, hostRef, recCtrlRef);
   useTranscript(listening, setTranscript);
 
+  // Speed up the rim beam during thinking/searching WITHOUT restarting it.
+  // Changing its CSS animation-duration would remap the sweep (it'd jump to a new
+  // spot); nudging the running animation's playbackRate just makes it accelerate
+  // in place. is-live keeps every other orb animation at a constant duration, so
+  // the gradient + beam carry straight through the press untouched.
+  useEffect(() => {
+    const host = hostRef.current;
+    if (!host) return;
+    const rate = (phase === 'thinking' || phase === 'searching') ? 2 : 1;
+    host.querySelectorAll('.vorb-beam-light').forEach((b) => {
+      if (b.getAnimations) b.getAnimations().forEach((a) => { a.playbackRate = rate; });
+    });
+  }, [phase]);
+
   // Preload every image once, up-front, so opening any tab later is instant and
   // the browser never re-fetches/re-decodes on each mount (paired with the
   // session caching serve.py now sends for images). Runs once on mount.
@@ -1082,7 +1096,7 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
             onPointerLeave={blobLive ? orbPressUp : undefined}
             onPointerCancel={blobLive ? orbPressUp : undefined}>
             <div className="blob-scaler">
-              <VoiceOrb theme={theme} listening={blobLive} />
+              <VoiceOrb theme={theme} listening={showStage} />
             </div>
           </div>
 

@@ -2149,10 +2149,10 @@
 /* live: faster breath + faster beam sweep */
 .vorb.is-live .vorb-ring { animation-duration: 2.4s, 1.15s; }
 .vorb.is-live .vorb-beam-light { animation-duration: 3s; }
-/* thinking / searching (right after the tap): the thin rim beam sweeps faster,
-   reading as active "processing" while the orb gently contracts (vorbThink). */
-.phase-thinking .vorb-beam-light,
-.phase-searching .vorb-beam-light { animation-duration: 1.6s; }
+/* The beam keeps a CONSTANT css duration across listening↔thinking (is-live now
+   stays on through the whole voice flow, so no looping animation remaps/jumps).
+   The thinking-phase speed-up is a playbackRate bump applied in JS (FrogAgent),
+   so the sweep just accelerates in place instead of restarting from a new spot. */
 
 /* ── smooth, premium ENTRANCE — the whole stage (sphere + edge + beam)
    scales in as ONE unit, so the border beam never detaches from the circle ── */
