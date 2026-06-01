@@ -253,6 +253,18 @@ const SEED_PAST_ORDERS = [
 // ─────────────────────────────────────────────────────────────
 // useMic — getUserMedia + AnalyserNode RMS → CSS var
 // ─────────────────────────────────────────────────────────────
+// One shared AudioContext for the whole app, created lazily and REUSED across
+// listening sessions. iOS Safari stops delivering mic audio after the first
+// session when you create + close an AudioContext every time; a single resumed
+// context is reliable. (Fixes "mic catches once, then nothing on the 2nd tap".)
+let _sharedAudioCtx = null;
+function getSharedAudioCtx() {
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return null;
+  if (!_sharedAudioCtx || _sharedAudioCtx.state === 'closed') _sharedAudioCtx = new AC();
+  return _sharedAudioCtx;
+}
+
 function useMic(active, levelRef, hostRef, recRef) {
   useEffect(() => {
     if (!active) {
@@ -260,7 +272,7 @@ function useMic(active, levelRef, hostRef, recRef) {
       levelRef.current = 0;
       return;
     }
-    let audioCtx,analyser,raf,stream,rec,alive = true;
+    let audioCtx,analyser,source,raf,stream,rec,alive = true;
     let chunks = [];
     let smoothed = 0;
     let lastVol = '';   // last --vol string written → skip redundant orb repaints
@@ -283,8 +295,14 @@ function useMic(active, levelRef, hostRef, recRef) {
             }) };
           } catch (e) {console.warn('recorder unavailable', e?.name || e);if (recRef) recRef.current = null;}
         }
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const source = audioCtx.createMediaStreamSource(stream);
+        // Reuse the shared context (see getSharedAudioCtx) and make sure it's
+        // running — iOS leaves a fresh/idle context 'suspended' and the analyser
+        // then reads silence on the 2nd+ session.
+        audioCtx = getSharedAudioCtx();
+        if (!audioCtx) return;                 // no WebAudio → recorder still works
+        if (audioCtx.state === 'suspended') { try { await audioCtx.resume(); } catch (_) {} }
+        if (!alive) { stream.getTracks().forEach((t) => t.stop()); return; }
+        source = audioCtx.createMediaStreamSource(stream);
         analyser = audioCtx.createAnalyser();
         analyser.fftSize = 512;
         analyser.smoothingTimeConstant = 0.55;
@@ -329,7 +347,10 @@ function useMic(active, levelRef, hostRef, recRef) {
       try {if (rec && rec.state !== 'inactive') rec.stop();} catch (e) {}
       if (recRef) recRef.current = null;
       if (stream) stream.getTracks().forEach((t) => t.stop());
-      if (audioCtx) audioCtx.close().catch(() => {});
+      // Disconnect this session's nodes but DO NOT close the shared context —
+      // closing + recreating it per session is what made iOS drop the mic.
+      try { if (source) source.disconnect(); } catch (e) {}
+      try { if (analyser) analyser.disconnect(); } catch (e) {}
       if (hostRef.current) hostRef.current.style.setProperty('--vol', '0');
       levelRef.current = 0;
     };
@@ -756,6 +777,13 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
   const startListen = useCallback(() => {
     setTranscript('');setIntent(null);setStoreIdx(0);setCart([]);setPhase('listening');
   }, []);
+  // Orb press feedback: a quick squish-in + (where supported) a small haptic
+  // "impact" on finger-down; release springs back with the CSS overshoot.
+  const orbPressDown = useCallback((e) => {
+    try { if (navigator.vibrate) navigator.vibrate(8); } catch (_) {}
+    e.currentTarget.classList.add('is-pressing');
+  }, []);
+  const orbPressUp = useCallback((e) => { e.currentTarget.classList.remove('is-pressing'); }, []);
   const buildOrderFrom = useCallback((text) => {
     const cat = detectIntent(text) || 'pizza';
     const s = STORES[cat][0];
@@ -1047,7 +1075,12 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
       <div className="stage">
           {showParticles && phase !== 'listening' && <Particles theme={theme} listening={blobLive} />}
 
-          <div className="blob-stack" onClick={blobLive ? stopAndProcess : undefined}>
+          <div className="blob-stack"
+            onClick={blobLive ? stopAndProcess : undefined}
+            onPointerDown={blobLive ? orbPressDown : undefined}
+            onPointerUp={blobLive ? orbPressUp : undefined}
+            onPointerLeave={blobLive ? orbPressUp : undefined}
+            onPointerCancel={blobLive ? orbPressUp : undefined}>
             <div className="blob-scaler">
               <VoiceOrb theme={theme} listening={blobLive} />
             </div>

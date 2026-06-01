@@ -89,7 +89,7 @@
   font-family: 'Satoshi', 'Geist', -apple-system, system-ui, sans-serif;
   --vol: 0; --intensity: 1;
   --dock-h: calc(112px + env(safe-area-inset-bottom, 0px)); /* tab-bar dock height — content clears it so it can scroll under the fade */
-  --vlive: calc(var(--vol) * var(--intensity));
+  --vlive: calc(var(--vol) * var(--intensity) * 1.15);  /* +15% orb reactivity to voice */
 
   /* spacing scale from Figma file: 0/4/6/12/16/20/24/32/40/160 */
   --s-0: 0px;  --s-4: 4px;   --s-6: 6px;   --s-12: 12px;
@@ -321,6 +321,21 @@
   width: 320px; height: 320px;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer; user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  /* press feedback: spring back to rest with a gentle overshoot ("stretch" pop) */
+  transform: scale(1);
+  transition: transform 0.36s cubic-bezier(0.34, 1.56, 0.45, 1);
+  will-change: transform;
+  touch-action: manipulation;
+}
+/* finger down → quick squish-in (the "impact"); release springs back via the
+   overshoot above. Toggled by JS on pointerdown/up (see FrogAgent). */
+.blob-stack.is-pressing {
+  transform: scale(0.92);
+  transition: transform 0.11s cubic-bezier(0.4, 0, 0.2, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .blob-stack, .blob-stack.is-pressing { transition-duration: 0.01s; }
 }
 .blob-haze {
   position: absolute; inset: -40px;
