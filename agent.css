@@ -109,9 +109,10 @@
 
 /* canvas backgrounds */
 .theme-solayerAI {
-  background:
-    radial-gradient(120% 60% at 50% 0%, rgba(0,255,163,0.16) 0%, rgba(0,255,163,0.04) 35%, transparent 60%),
-    radial-gradient(140% 90% at 50% 100%, #050606 0%, #0F0F10 70%);
+  /* canvas matches the Card screen exactly, so AI Order + Account read the same:
+     flat #0a0a0a base + the identical emerald top-glow used on .card-scroll.
+     (The Card tab paints its own opaque #0a0a0a over this, so it's unchanged.) */
+  background: linear-gradient(180deg, rgba(8,77,62,0.30) 0px, rgba(8,77,62,0) 400px) no-repeat, #0a0a0a;
 }
 .theme-indigo {
   background:
