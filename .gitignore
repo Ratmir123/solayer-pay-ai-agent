@@ -51,3 +51,10 @@ mascot animation.mp4
 # Local backup of the original full-size PNGs (replaced by optimized .webp).
 # Redundant with git history, so no need to ship this ~80MB folder.
 _img-backup/
+
+# Source assets / refs — not needed at runtime, kept locally only.
+# Mascot_anim: raw mascot frames (the app ships the compiled mascot-*-strip.webp).
+# uploads/_fig: user screenshots & Figma references.
+Mascot_anim/
+uploads/
+_fig/
