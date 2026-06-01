@@ -35,6 +35,10 @@ out/
 *.log
 logs/
 
+# Python bytecode cache (serve.py / gen_*.py)
+__pycache__/
+*.pyc
+
 # /goal orchestrator artifacts (internal automation logs, not app code)
 .goal/
 
