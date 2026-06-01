@@ -1774,12 +1774,20 @@
 
 
 /* ─── ACCOUNT SCREEN ─── */
+/* The Account tab's shared app-header is entirely empty this phase (no back
+   button, no title, the orders button is hidden) — collapse it so it doesn't
+   reserve an empty band at the top. The status-bar clearance it used to provide
+   moves onto .account-area below. (Was previously only collapsed on phones, which
+   left a void above the profile card in the desktop mockup.) */
+.phase-account .agent-header { display: none; }
 .account-area {
   position: relative; z-index: 10;
   flex: 1 1 auto;
   display: flex; flex-direction: column;
   min-height: 0; overflow-y: auto;
-  padding: 4px 0 var(--dock-h);
+  /* clear the mockup status bar the same way .cardx-header does (60px on desktop);
+     the phone layer (responsive.css) overrides this to hug the real notch. */
+  padding: max(calc(env(safe-area-inset-top, 0px) + 16px), 60px) 0 var(--dock-h);
   gap: 20px;
 }
 .account-header-card {

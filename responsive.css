@@ -65,10 +65,9 @@
   .cardx-header {
     padding-top: max(env(safe-area-inset-top, 0px) + 14px, 20px);
   }
-  /* Account tab's app-header row is purely decorative here (empty placeholder +
-     a hidden orders button), so on a real phone it just leaves an empty band up
-     top — collapse it. Desktop keeps it (reads as status-bar spacing). */
-  .phase-account .agent-header { display: none; }
+  /* The empty Account header is collapsed globally now (see agent.css). On a real
+     phone there's no fake status bar, so .account-area hugs the notch instead of
+     carrying the desktop mockup's status-bar clearance. */
   .account-area {
     padding-top: max(env(safe-area-inset-top, 0px) + 10px, 16px);
   }

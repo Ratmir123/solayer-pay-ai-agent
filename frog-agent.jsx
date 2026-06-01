@@ -1253,7 +1253,7 @@ function DishCarousel({ categories, onPick }) {
   const speedRef = useRef(1);   // eased current multiplier (0..1)
   const targetRef = useRef(1);  // 0 = paused, 1 = running
   const posRef = useRef(0);     // current scroll offset in px (auto-drift + drag share it)
-  const dragRef = useRef({ active: false, startX: 0, startPos: 0, moved: false, vel: 0, lastX: 0, lastT: 0, inertia: 0 });
+  const dragRef = useRef({ active: false, startX: 0, startPos: 0, moved: false, captured: false, vel: 0, lastX: 0, lastT: 0, inertia: 0 });
   const [reduce] = useState(() =>
     typeof window !== 'undefined' && window.matchMedia &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -1306,17 +1306,23 @@ function DishCarousel({ categories, onPick }) {
     // grab + drag to scroll (touch and mouse). Drift pauses while held; on
     // release a flick carries momentum, then the calm auto-drift eases back.
     const onDown = (e) => {
-      d.active = true; d.moved = false;
+      d.active = true; d.moved = false; d.captured = false;
       d.startX = e.clientX; d.startPos = posRef.current;
       d.lastX = e.clientX; d.lastT = e.timeStamp || performance.now();
       d.vel = 0; d.inertia = 0;
       targetRef.current = 0; speedRef.current = 0;
-      try { track.setPointerCapture(e.pointerId); } catch (_) {}
+      // Don't grab the pointer on a plain tap. Capturing here makes Blink (desktop
+      // Chrome/Edge) retarget the trailing `click` to this <div> instead of the chip
+      // <button>, so the chip's onClick never fires on desktop. (WebKit/iOS doesn't
+      // retarget — that's why mobile worked.) We capture in onMove once a real drag begins.
     };
     const onMove = (e) => {
       if (!d.active) return;
       const dx = e.clientX - d.startX;
-      if (Math.abs(dx) > 8) d.moved = true;       // tap vs swipe threshold
+      if (!d.moved && Math.abs(dx) > 8) {          // tap vs swipe threshold
+        d.moved = true;                            // it's a drag, not a tap → now grab
+        try { track.setPointerCapture(e.pointerId); d.captured = true; } catch (_) {}
+      }
       posRef.current = d.startPos - dx;            // strip follows the finger
       const now = e.timeStamp || performance.now();
       const dtv = now - d.lastT;
@@ -1331,7 +1337,7 @@ function DishCarousel({ categories, onPick }) {
       d.active = false;
       d.inertia = Math.max(-2600, Math.min(2600, d.vel)); // clamp flick speed
       targetRef.current = 1;                       // ease the calm drift back in
-      try { track.releasePointerCapture(e.pointerId); } catch (_) {}
+      if (d.captured) { try { track.releasePointerCapture(e.pointerId); } catch (_) {} d.captured = false; }
     };
     track.addEventListener('pointerdown', onDown);
     track.addEventListener('pointermove', onMove);
