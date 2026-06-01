@@ -2222,14 +2222,19 @@
 .vorb.is-live .vb-b4 { animation-duration: 6.5s; }
 .vorb.is-live .vb-b5 { animation-duration: 5.5s; }
 
-/* thinking/searching: gentle contraction so it reads as "processing" */
+/* thinking/searching: a gentle contraction pulse. It must START at the orb's
+   RESTING scale (0.93 — the same scale(0.93 + vlive*0.3) the .vorb sits at when
+   idle/listening with no mic level), because this animation overrides that
+   transform. Matching it means entering thinking right after a tap eases in with
+   NO snap. (The old keyframe started at 0.86 → teleported the orb smaller;
+   starting at 1.0 jumped it the other way.) 0% == 100% → seamless loop. */
 .phase-thinking .vorb,
 .phase-searching .vorb {
-  animation: vorbThink 1.8s ease-in-out infinite;
+  animation: vorbThink 2s ease-in-out infinite;
 }
 @keyframes vorbThink {
-  0%, 100% { transform: scale(0.86); }
-  50%      { transform: scale(0.92); }
+  0%, 100% { transform: scale(0.93); }   /* == .vorb resting scale → no jump in */
+  50%      { transform: scale(0.88); }    /* gentle contraction */
 }
 
 /* ── Voice transcript & meta under the orb ── */
