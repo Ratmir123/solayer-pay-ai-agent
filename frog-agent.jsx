@@ -1023,44 +1023,8 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
                 <span className="greet-hello">
                   {timeGreeting} <span className="wave-emoji" aria-hidden="true">👋</span>
                 </span>
-                <span className="greet-line" role="heading" aria-level={2}>What are you feeling?</span>
+                <span className="greet-line" role="heading" aria-level={2}>What are you craving?</span>
               </div>
-
-              {/* Solayer Card with AI icon */}
-              <div className="solayer-card-widget">
-                <div className="scw-bg-glow" aria-hidden="true" />
-                <div className="scw-top">
-                  <img src="fig-solayer-wordmark.svg" className="scw-wordmark" alt="Solayer" draggable="false" />
-                  <div className="scw-ai-badge" aria-label="AI powered">
-                    <svg width="12" height="12" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                      <path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.22 4.22l1.42 1.42M14.36 14.36l1.42 1.42M4.22 15.78l1.42-1.42M14.36 5.64l1.42-1.42" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                      <circle cx="10" cy="10" r="3" fill="currentColor"/>
-                    </svg>
-                    <span>AI</span>
-                  </div>
-                </div>
-                <div className="scw-balance-label">Available Balance</div>
-                <div className="scw-balance">$2,450.00</div>
-                <div className="scw-bottom">
-                  <div className="scw-chip" aria-hidden="true">
-                    <svg width="28" height="20" viewBox="0 0 28 20" fill="none">
-                      <rect width="28" height="20" rx="4" fill="url(#chip-grad)"/>
-                      <line x1="0" y1="7" x2="28" y2="7" stroke="rgba(0,0,0,0.18)" strokeWidth="1"/>
-                      <line x1="0" y1="13" x2="28" y2="13" stroke="rgba(0,0,0,0.18)" strokeWidth="1"/>
-                      <line x1="9" y1="0" x2="9" y2="20" stroke="rgba(0,0,0,0.18)" strokeWidth="1"/>
-                      <line x1="19" y1="0" x2="19" y2="20" stroke="rgba(0,0,0,0.18)" strokeWidth="1"/>
-                      <defs>
-                        <linearGradient id="chip-grad" x1="0" y1="0" x2="28" y2="20" gradientUnits="userSpaceOnUse">
-                          <stop stopColor="#e0c97a"/>
-                          <stop offset="1" stopColor="#b8972e"/>
-                        </linearGradient>
-                      </defs>
-                    </svg>
-                  </div>
-                  <div className="scw-number">•••• •••• •••• 4291</div>
-                </div>
-              </div>
-
               <DishCarousel categories={CATEGORIES} onPick={pickCategory} />
             </div> :
 

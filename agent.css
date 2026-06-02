@@ -2468,59 +2468,6 @@
   min-height: 0;
 }
 
-/* ─── Solayer Card Widget (home screen) ─── */
-.solayer-card-widget {
-  position: relative;
-  margin: 0 20px;
-  border-radius: 20px;
-  padding: 18px 20px 16px;
-  background: linear-gradient(135deg, #0d1f14 0%, #0a2918 45%, #061a0f 100%);
-  border: 1px solid rgba(52, 211, 103, 0.25);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(52,211,103,0.12);
-  overflow: hidden;
-  animation: greetIn .5s var(--ease-out) both;
-  animation-delay: 100ms;
-}
-.scw-bg-glow {
-  position: absolute; inset: 0; pointer-events: none;
-  background: radial-gradient(ellipse 80% 60% at 80% 20%, rgba(52,211,103,0.12) 0%, transparent 70%);
-}
-.scw-top {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 14px;
-}
-.scw-wordmark {
-  height: 16px; width: auto; opacity: 0.9; filter: brightness(1.2);
-}
-.scw-ai-badge {
-  display: flex; align-items: center; gap: 4px;
-  background: rgba(52,211,103,0.15);
-  border: 1px solid rgba(52,211,103,0.35);
-  border-radius: 20px;
-  padding: 3px 8px 3px 6px;
-  color: #34d367;
-  font-size: 10px; font-weight: 700; letter-spacing: 0.05em;
-}
-.scw-balance-label {
-  font-size: 10px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase;
-  color: rgba(255,255,255,0.4);
-  margin-bottom: 4px;
-}
-.scw-balance {
-  font-size: 28px; font-weight: 700; letter-spacing: -0.03em;
-  color: #fff;
-  margin-bottom: 16px;
-}
-.scw-bottom {
-  display: flex; align-items: center; justify-content: space-between;
-}
-.scw-chip { display: flex; }
-.scw-number {
-  font-size: 13px; font-weight: 500; letter-spacing: 0.12em;
-  color: rgba(255,255,255,0.45);
-  font-variant-numeric: tabular-nums;
-}
-
 /* idle hero — centered greeting (no bubble); the one confident focal point */
 .greet-hero {
   display: flex; flex-direction: column; align-items: center;
