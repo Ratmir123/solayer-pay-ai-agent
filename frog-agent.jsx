@@ -1023,7 +1023,7 @@ function FrogAgent({ theme, intensity = 1, showParticles = true }) {
                 <span className="greet-hello">
                   {timeGreeting} <span className="wave-emoji" aria-hidden="true">👋</span>
                 </span>
-                <span className="greet-line" role="heading" aria-level={2}>What are you craving?</span>
+                <span className="greet-line" role="heading" aria-level={2}>What are you feeling?</span>
               </div>
               <DishCarousel categories={CATEGORIES} onPick={pickCategory} />
             </div> :
